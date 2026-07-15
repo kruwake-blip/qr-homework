@@ -29,6 +29,9 @@
     
     /* สไตล์เฉพาะปุ่มเลือกบทบาทหน้า Login */
     .role-btn-group .btn { padding: 12px; font-size: 1.1rem; }
+
+    /* ปุ่มเครื่องคิดเลขสำหรับคีย์ตัวเลขคะแนน */
+    .calc-btn { height: 55px; font-size: 1.4rem; font-weight: bold; }
   </style>
 </head>
 <body>
@@ -75,9 +78,20 @@
             <span>1. เลือกงานที่ต้องการตรวจ</span>
             <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#createAssignmentModal">➕ สร้างงานใหม่</button>
           </h5>
-          <select id="assignmentSelect" class="form-select form-select-lg mb-4" onchange="updateDashboard()">
+          <select id="assignmentSelect" class="form-select form-select-lg mb-3" onchange="updateDashboard()">
             <option value="">-- กรุณาเลือกชิ้นงาน --</option>
           </select>
+
+          <div class="mb-4">
+            <label class="form-label fw-bold text-secondary">รูปแบบการให้คะแนนเมื่อสแกน:</label>
+            <div class="btn-group w-100" role="group">
+              <input type="radio" class="btn-check" name="scoringMode" id="scoreDefault" value="default" checked>
+              <label class="btn btn-outline-primary" for="scoreDefault">🏆 คะแนนเต็ม (Default)</label>
+              
+              <input type="radio" class="btn-check" name="scoringMode" id="scoreCustom" value="custom">
+              <label class="btn btn-outline-primary" for="scoreCustom">✏️ กรอกเอง (มีปุ่มกด)</label>
+            </div>
+          </div>
 
           <h5 class="card-title mb-3 text-primary">2. ส่อง QR Code เพื่อตรวจส่งงาน</h5>
           <div class="text-center mb-3">
@@ -99,6 +113,14 @@
       <div class="col-md-6">
         <div class="card p-4">
           <h5 class="card-title mb-3 text-primary">Dashboard สรุปภาพรวม</h5>
+          
+          <div class="mb-3">
+            <label class="form-label fw-bold text-secondary">🎯 เลือกห้องเรียนเพื่อกรองข้อมูล:</label>
+            <select id="roomFilterSelect" class="form-select" onchange="renderFilteredDashboard()">
+              <option value="all">-- แสดงทุกห้อง --</option>
+            </select>
+          </div>
+
           <div class="row text-center mb-3">
             <div class="col-6">
               <div class="bg-success bg-opacity-10 p-3 rounded border border-success">
@@ -128,41 +150,78 @@
       </div>
 
       <div class="col-md-8">
-        <div class="row mb-4">
-          <div class="col-md-6 mb-3">
-            <div class="card p-4 text-center bg-success text-white h-100">
-              <h5>✔ ภารกิจส่งแล้ว</h5>
-              <h1 id="stuSubmittedCount" class="display-4 fw-bold mt-2">0</h1>
-              <p class="mb-0">จำนวนงานทั้งหมดที่คุณครูตรวจรับแล้ว</p>
+        <div class="row mb-4 text-center">
+          <div class="col-md-4 mb-3">
+            <div class="card p-3 bg-success text-white h-100">
+              <h6>✔ ภารกิจส่งแล้ว</h6>
+              <h2 id="stuSubmittedCount" class="fw-bold mt-2">0</h2>
             </div>
           </div>
-          <div class="col-md-6 mb-3">
-            <div class="card p-4 text-center bg-warning text-dark h-100">
-              <h5>⚠️ ภารกิจค้างส่ง</h5>
-              <h1 id="stuMissingCount" class="display-4 fw-bold mt-2 text-danger">0</h1>
-              <p class="mb-0">จำนวนงานค้างที่คุณครูสั่งแต่ยังไม่ได้ส่ง</p>
+          <div class="col-md-4 mb-3">
+            <div class="card p-3 bg-warning text-dark h-100">
+              <h6>⚠️ ภารกิจค้างส่ง</h6>
+              <h2 id="stuMissingCount" class="fw-bold mt-2 text-danger">0</h2>
+            </div>
+          </div>
+          <div class="col-md-4 mb-3">
+            <div class="card p-3 bg-info text-dark h-100" style="background-color: #e0f7fa !important; border: 2px solid #00acc1;">
+              <h6 class="fw-bold text-dark">🪙 คอยน์สะสมของคุณ</h6>
+              <h2 id="stuCoinCount" class="fw-bold mt-2 text-primary">0</h2>
             </div>
           </div>
         </div>
 
         <div class="card p-4">
-          <h5 class="card-title mb-3 text-primary fw-bold">📝 ประวัติภารกิจและการส่งงาน</h5>
+          <h5 class="card-title mb-3 text-primary fw-bold">📝 รายการภารกิจ</h5>
           <div class="table-responsive">
             <table class="table table-hover">
               <thead class="table-light">
                 <tr>
-                  <th>รหัสงาน</th>
                   <th>ชื่องาน</th>
-                  <th>กำหนดส่ง</th>
-                  <th class="text-center">สถานะการส่ง</th>
+                  <th class="text-center" style="width: 150px;">สถานะการส่ง</th>
                 </tr>
               </thead>
               <tbody id="studentJobsTableBody">
                 <tr>
-                  <td colspan="4" class="text-center text-muted">กำลังโหลดข้อมูล...</td>
+                  <td colspan="2" class="text-center text-muted">กำลังโหลดข้อมูล...</td>
                 </tr>
               </tbody>
             </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="customScoreModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 380px;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title text-primary fw-bold">✏️ สแกนผ่านแล้ว! กรอกคะแนน</h5>
+          <button type="button" class="btn-close" onclick="cancelCustomScore()" aria-label="Close"></button>
+        </div>
+        <div class="modal-body text-center">
+          <h6 id="scoreModalStudentName" class="mb-3 text-success fw-bold">เลขที่ - : นักเรียน</h6>
+          <input type="text" id="scoreInputDisplay" class="form-control form-control-lg text-center mb-3" readonly style="font-size: 2rem; font-weight: bold; background-color: #fff;">
+          
+          <div class="row g-2 mb-3">
+            <div class="col-4"><button onclick="pressNum(1)" class="btn btn-outline-secondary w-100 calc-btn">1</button></div>
+            <div class="col-4"><button onclick="pressNum(2)" class="btn btn-outline-secondary w-100 calc-btn">2</button></div>
+            <div class="col-4"><button onclick="pressNum(3)" class="btn btn-outline-secondary w-100 calc-btn">3</button></div>
+            <div class="col-4"><button onclick="pressNum(4)" class="btn btn-outline-secondary w-100 calc-btn">4</button></div>
+            <div class="col-4"><button onclick="pressNum(5)" class="btn btn-outline-secondary w-100 calc-btn">5</button></div>
+            <div class="col-4"><button onclick="pressNum(6)" class="btn btn-outline-secondary w-100 calc-btn">6</button></div>
+            <div class="col-4"><button onclick="pressNum(7)" class="btn btn-outline-secondary w-100 calc-btn">7</button></div>
+            <div class="col-4"><button onclick="pressNum(8)" class="btn btn-outline-secondary w-100 calc-btn">8</button></div>
+            <div class="col-4"><button onclick="pressNum(9)" class="btn btn-outline-secondary w-100 calc-btn">9</button></div>
+            <div class="col-4"><button onclick="clearScore()" class="btn btn-danger w-100 calc-btn">C</button></div>
+            <div class="col-4"><button onclick="pressNum(0)" class="btn btn-outline-secondary w-100 calc-btn">0</button></div>
+            <div class="col-4"><button onclick="backspaceScore()" class="btn btn-secondary w-100 calc-btn">⌫</button></div>
+          </div>
+          
+          <div class="d-flex gap-2">
+            <button onclick="cancelCustomScore()" class="btn btn-outline-danger w-100 py-2">ยกเลิก</button>
+            <button onclick="submitCustomScore()" class="btn btn-primary w-100 py-2">💾 บันทึกคะแนน</button>
           </div>
         </div>
       </div>
@@ -220,12 +279,8 @@
     let audioCtx = null;
     function unlockAudio() {
       try {
-        if (!audioCtx) {
-          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        }
-        if (audioCtx.state === 'suspended') {
-          audioCtx.resume();
-        }
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
         playSuccessSound();
         alert("เปิดสัญญาณระบบเสียงเรียบร้อยแล้ว เบราว์เซอร์ Safari สามารถทำงานได้แล้วครับ!");
       } catch (e) {
@@ -270,22 +325,21 @@
     let animationFrameId = null;
     let videoElement, canvasElement, canvasCtx;
 
-    // แก้ไขฟังก์ชันเรียก Fetch ให้เข้ากันได้กับนโยบายความปลอดภัยสูงสุดของ Safari
+    // ตัวแปรเก็บข้อมูลหลังแสกนคิวอาร์สำหรับหน้ากรอกคะแนนเอง
+    let tempScannedStudentId = "";
+    let cachedStudentsDashboard = []; // เก็บรายชื่อที่ได้มาทั้งหมดเพื่อนำไปใช้ฟิลเตอร์ทีหลัง
+
     async function callBackend(data) {
       const response = await fetch(BACKEND_URL, {
         method: "POST",
-        mode: "cors", // เปิดโหมดแชร์ทรัพยากรข้ามเว็บไซต์อย่างชัดเจนเพื่อ Safari
-        headers: {
-          "Content-Type": "text/plain;charset=utf-8"
-        },
+        mode: "cors",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify(data)
       });
       return await response.json();
     }
 
-    // ฟังก์ชันเข้าสู่ระบบที่ปลอดภัยต่อการใช้งานใน Safari
     function handleLogin() {
-      // เปิดใช้ AudioContext แบบแฝง เพื่อเลี่ยงการโดนบล็อกจาก Apple Security
       if (window.AudioContext || window.webkitAudioContext) {
         if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
@@ -314,7 +368,7 @@
             document.getElementById('loginError').innerText = response.message; 
           }
         }).catch(e => { 
-          document.getElementById('loginError').innerText = "ล็อกอินไม่สำเร็จ โปรดกดปุ่ม 'เปิดใช้งานระบบเสียงเตือน' ก่อนกดเข้าสู่ระบบอีกครั้ง"; 
+          document.getElementById('loginError').innerText = "ล็อกอินไม่สำเร็จ โปรดกดปุ่มด้านล่างเพื่ออนุญาตสิทธิ์ก่อนล็อกอิน"; 
         });
       } else {
         callBackend({ action: "studentLogin", username: user, password: pass }).then(response => {
@@ -328,7 +382,7 @@
             document.getElementById('loginError').innerText = response.message;
           }
         }).catch(e => { 
-          document.getElementById('loginError').innerText = "ล็อกอินไม่สำเร็จ โปรดกดปุ่ม 'เปิดใช้งานระบบเสียงเตือน' ก่อนกดเข้าสู่ระบบอีกครั้ง"; 
+          document.getElementById('loginError').innerText = "ล็อกอินไม่สำเร็จ โปรดกดปุ่มด้านล่างเพื่ออนุญาตสิทธิ์ก่อนล็อกอิน"; 
         });
       }
     }
@@ -378,31 +432,33 @@
       });
     }
 
+    // โหลดหน้าแสดงผลนักเรียน (แก้ไขเหลือแค่ ชื่องาน และ สถานะ + แสดงผล Coin)
     function loadStudentDashboard() {
       const tableBody = document.getElementById('studentJobsTableBody');
-      tableBody.innerHTML = `<tr><td colspan="4" class="text-center text-muted">กำลังดึงข้อมูล...</td></tr>`;
+      tableBody.innerHTML = `<tr><td colspan="2" class="text-center text-muted">กำลังดึงข้อมูล...</td></tr>`;
 
       callBackend({ action: "getStudentDashboard", studentId: currentStudentId }).then(data => {
         if (data.success) {
           document.getElementById('stuSubmittedCount').innerText = data.submittedCount;
           document.getElementById('stuMissingCount').innerText = data.missingJobsCount;
+          // แสดงคอยน์ที่บวกเก็บไว้ในชีต
+          document.getElementById('stuCoinCount').innerText = data.coins + " 🪙";
           
           tableBody.innerHTML = "";
           if(data.allJobs.length === 0) {
-            tableBody.innerHTML = `<tr><td colspan="4" class="text-center text-success fw-bold">ยังไม่มีข้อมูลภารกิจงานในระบบขณะนี้ 🎉</td></tr>`;
+            tableBody.innerHTML = `<tr><td colspan="2" class="text-center text-success fw-bold">ยังไม่มีข้อมูลภารกิจงานในระบบขณะนี้ 🎉</td></tr>`;
             return;
           }
 
           data.allJobs.forEach(job => {
             const tr = document.createElement('tr');
             const statusBadge = job.status === "ส่งแล้ว" 
-              ? `<span class="badge bg-success">✔ ส่งแล้ว</span>`
-              : `<span class="badge bg-danger">❌ ยังไม่ส่ง</span>`;
+              ? `<span class="badge bg-success" style="font-size:0.95rem;">✔ ส่งแล้ว</span>`
+              : `<span class="badge bg-danger" style="font-size:0.95rem;">❌ ยังไม่ส่ง</span>`;
 
+            // เหลือเพียง 2 คอลัมน์หลักตามที่อยากให้ปรับ
             tr.innerHTML = `
-              <td><strong>${job.id}</strong></td>
-              <td>${job.name} <small class="text-muted d-block">สั่ง: ${job.assignDate}</small></td>
-              <td><span class="text-secondary">${job.dueDate}</span></td>
+              <td><span class="fw-bold">${job.name}</span></td>
               <td class="text-center">${statusBadge}</td>
             `;
             tableBody.appendChild(tr);
@@ -424,12 +480,7 @@
       document.getElementById('canvas-container').classList.remove('hidden');
 
       navigator.mediaDevices.getUserMedia({
-        video: { 
-          facingMode: "environment",
-          width: { ideal: 640 }, 
-          height: { ideal: 480 },
-          frameRate: { ideal: 60 }
-        }
+        video: { facingMode: "environment", width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 60 } }
       }).then(function(stream) {
         videoStream = stream;
         videoElement.srcObject = stream;
@@ -457,10 +508,7 @@
         const roiHeight = Math.floor(vHeight * 0.7);
         
         const imageData = canvasCtx.getImageData(roiX, roiY, roiWidth, roiHeight);
-        
-        const code = jsQR(imageData.data, imageData.width, imageData.height, {
-          inversionAttempts: "dontInvert"
-        });
+        const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" });
 
         if (code && code.data) {
           onScanMatched(code.data);
@@ -482,63 +530,188 @@
       document.getElementById('canvas-container').classList.add('hidden');
     }
 
+    // ฟังก์ชันประมวลผลเมื่อสแกนเจอคิวอาร์ (คัดกรองโหมดให้คะแนน)
     function onScanMatched(decodedText) {
       const cleanStudentId = String(decodedText).trim();
-
       if (isProcessing || cleanStudentId === lastScannedText) return;
       isProcessing = true;
       lastScannedText = cleanStudentId;
 
       const assignmentId = document.getElementById('assignmentSelect').value;
+      const mode = document.querySelector('input[name="scoringMode"]:checked').value;
 
-      callBackend({ action: "processQrScan", studentId: cleanStudentId, assignmentId: assignmentId, teacherId: currentTeacherId })
-        .then(result => {
-          const resBox = document.getElementById('resultMessage');
-          resBox.classList.remove('hidden', 'bg-success-custom', 'bg-danger-custom');
-          document.body.classList.remove('scan-success-flash', 'scan-delay-flash');
-
-          if(result.success) {
-            playSuccessSound();
-            resBox.className = "result-box bg-success-custom";
-            resBox.innerHTML = `✔ ${result.message}<br>เลขที่ ${result.student.number} : ${result.student.name}`;
-            document.body.classList.add('scan-success-flash');
-            updateDashboard();
-          } else {
-            playErrorSound();
-            resBox.className = "result-box bg-danger-custom";
-            if(result.status === 'duplicate') {
-              resBox.innerHTML = `❌ ${result.message}<br>เลขที่ ${result.student.number} : ${result.student.name} ส่งแล้ว`;
-            } else {
-              resBox.innerHTML = `❌ ${result.message}`;
-            }
-            document.body.classList.add('scan-delay-flash');
-          }
-
-          setTimeout(() => {
-            document.body.classList.remove('scan-success-flash', 'scan-delay-flash');
-            isProcessing = false;
-          }, 300);
-
-          setTimeout(() => { if(lastScannedText === cleanStudentId) lastScannedText = ""; }, 2000);
-        });
+      if (mode === "default") {
+        // บันทึกผ่านคะแนนเต็ม
+        sendScoreToBackend(cleanStudentId, assignmentId, null);
+      } else {
+        // หากเลือกแบบกรอกเอง -> ให้หยุดตรวจชั่วคราวแล้วให้เด้ง Popup แทน
+        tempScannedStudentId = cleanStudentId;
+        stopLightningScanner();
+        
+        // ค้นหาข้อมูลรายชื่อนักเรียนเบื้องต้นในชีตมาแสดงในโมดัลช่วยไกด์คุณครู
+        const stuObj = cachedStudentsDashboard.find(x => x.id === cleanStudentId);
+        const displayName = stuObj ? stuObj.name : "รหัส: " + cleanStudentId;
+        document.getElementById('scoreModalStudentName').innerText = displayName;
+        
+        // ล้างกล่องพิมพ์ก่อนพิมพ์ใหม่
+        document.getElementById('scoreInputDisplay').value = "";
+        
+        // เปิดโมดัลคะแนนเครื่องคิดเลข
+        const scoreModal = new bootstrap.Modal(document.getElementById('customScoreModal'));
+        scoreModal.show();
+      }
     }
 
+    // จัดการระบบปุ่มกดเครื่องคิดเลขใน Modal
+    function pressNum(num) {
+      const display = document.getElementById('scoreInputDisplay');
+      display.value = display.value + num;
+    }
+    function clearScore() {
+      document.getElementById('scoreInputDisplay').value = "";
+    }
+    function backspaceScore() {
+      const display = document.getElementById('scoreInputDisplay');
+      display.value = display.value.slice(0, -1);
+    }
+    function cancelCustomScore() {
+      const scoreModal = bootstrap.Modal.getInstance(document.getElementById('customScoreModal'));
+      if(scoreModal) scoreModal.hide();
+      
+      // ล้างข้อมูลและเปิดกล้องสแกนต่อทันที
+      tempScannedStudentId = "";
+      setTimeout(() => { 
+        lastScannedText = "";
+        isProcessing = false;
+        startLightningScanner();
+      }, 500);
+    }
+
+    function submitCustomScore() {
+      const scoreVal = document.getElementById('scoreInputDisplay').value.trim();
+      if(scoreVal === "") {
+        alert("กรุณาป้อนคะแนนในกล่องก่อนกดบันทึกครับ");
+        return;
+      }
+      
+      const scoreModal = bootstrap.Modal.getInstance(document.getElementById('customScoreModal'));
+      if(scoreModal) scoreModal.hide();
+
+      const assignmentId = document.getElementById('assignmentSelect').value;
+      sendScoreToBackend(tempScannedStudentId, assignmentId, scoreVal);
+    }
+
+    // ฟังก์ชันยิงสัญญาณตรวจคะแนนไปหลังบ้าน
+    function sendScoreToBackend(studentId, assignmentId, score) {
+      callBackend({ 
+        action: "processQrScan", 
+        studentId: studentId, 
+        assignmentId: assignmentId, 
+        teacherId: currentTeacherId,
+        score: score 
+      }).then(result => {
+        const resBox = document.getElementById('resultMessage');
+        resBox.classList.remove('hidden', 'bg-success-custom', 'bg-danger-custom');
+        document.body.classList.remove('scan-success-flash', 'scan-delay-flash');
+
+        if(result.success) {
+          playSuccessSound();
+          resBox.className = "result-box bg-success-custom";
+          resBox.innerHTML = `✔ ${result.message}<br>เลขที่ ${result.student.number} : ${result.student.name}`;
+          document.body.classList.add('scan-success-flash');
+          updateDashboard();
+        } else {
+          playErrorSound();
+          resBox.className = "result-box bg-danger-custom";
+          if(result.status === 'duplicate') {
+            resBox.innerHTML = `❌ ${result.message}<br>เลขที่ ${result.student.number} : ${result.student.name} ส่งแล้ว`;
+          } else {
+            resBox.innerHTML = `❌ ${result.message}`;
+          }
+          document.body.classList.add('scan-delay-flash');
+        }
+
+        // หากเมื่อกี้สแกนแบบ Custom แล้วหยุดกล้อง ให้เปิดการตั้งค่ากล้องขึ้นมาทำงานต่อเลย
+        if(score !== null) {
+          startLightningScanner();
+        }
+
+        setTimeout(() => {
+          document.body.classList.remove('scan-success-flash', 'scan-delay-flash');
+          isProcessing = false;
+        }, 300);
+
+        setTimeout(() => { if(lastScannedText === studentId) lastScannedText = ""; }, 2000);
+      });
+    }
+
+    // ดึงค่าสถิติจากแดชบอร์ดมาเก็บในเครื่อง เพื่อทำฟิลเตอร์หน้าเว็บโดยไม่ต้องยิงหลังบ้านซ้ำ ๆ
     function updateDashboard() {
       const assignmentId = document.getElementById('assignmentSelect').value;
       if (!assignmentId) return;
+
       callBackend({ action: "getDashboardData", assignmentId: assignmentId }).then(dash => {
-        document.getElementById('dashSubmitted').innerText = dash.submittedCount;
-        document.getElementById('dashMissing').innerText = dash.missingCount;
-        const listUl = document.getElementById('missingList'); listUl.innerHTML = "";
-        if(dash.missingList.length === 0) {
-          listUl.innerHTML = '<li class="list-group-item text-success text-center fw-bold">ส่งครบทุกคนแล้ว! 🎉</li>';
-        } else {
-          dash.missingList.forEach(name => {
-            let li = document.createElement('li'); li.className = "list-group-item text-danger"; li.innerText = name;
-            listUl.appendChild(li);
+        if(dash.success) {
+          cachedStudentsDashboard = dash.students;
+          
+          // สร้างรายการรายชื่อห้องเรียนมาใส่ใน Dropdown ฟิลเตอร์
+          const filterSelect = document.getElementById('roomFilterSelect');
+          const lastSelectedRoom = filterSelect.value; // บันทึกห้องที่ครูเคยกรองไว้
+          
+          // หาห้องเรียนที่มีทั้งหมด
+          const rooms = [...new Set(dash.students.map(item => item.room))].filter(Boolean);
+          rooms.sort();
+
+          filterSelect.innerHTML = '<option value="all">-- แสดงทุกห้อง --</option>';
+          rooms.forEach(room => {
+            let opt = document.createElement('option');
+            opt.value = room;
+            opt.innerText = "ห้อง " + room;
+            filterSelect.appendChild(opt);
           });
+
+          // รักษาค่าฟิลเตอร์ที่เคยเลือกไว้ ถ้ายังมีห้องนั้นอยู่
+          if(rooms.includes(lastSelectedRoom)) {
+            filterSelect.value = lastSelectedRoom;
+          }
+
+          renderFilteredDashboard();
         }
       });
+    }
+
+    // เรื่องที่ 4: ฟังก์ชันการฟิลเตอร์แยกห้องเรียนบน Dashboard สรุปภาพรวม
+    function renderFilteredDashboard() {
+      const selectedRoom = document.getElementById('roomFilterSelect').value;
+      
+      // กรองนักเรียนตามสิทธิ์ห้องที่เลือก
+      const filteredStudents = cachedStudentsDashboard.filter(student => {
+        if (selectedRoom === "all") return true;
+        return student.room === selectedRoom;
+      });
+
+      const submittedCount = filteredStudents.filter(s => s.submitted).length;
+      const missingList = filteredStudents.filter(s => !s.submitted);
+      const missingCount = missingList.length;
+
+      // อัปเดตตัวเลขจำนวนคน
+      document.getElementById('dashSubmitted').innerText = submittedCount;
+      document.getElementById('dashMissing').innerText = missingCount;
+
+      // แสดงรายการคนค้างส่งแยกเฉพาะห้องเรียน
+      const listUl = document.getElementById('missingList'); 
+      listUl.innerHTML = "";
+      
+      if(missingList.length === 0) {
+        listUl.innerHTML = '<li class="list-group-item text-success text-center fw-bold">ส่งครบทุกคนแล้วในฟิลเตอร์นี้! 🎉</li>';
+      } else {
+        missingList.forEach(student => {
+          let li = document.createElement('li'); 
+          li.className = "list-group-item text-danger d-flex justify-content-between align-items-center"; 
+          li.innerHTML = `<span>${student.name}</span> <span class="badge bg-secondary">ห้อง ${student.room}</span>`;
+          listUl.appendChild(li);
+        });
+      }
     }
 
     function logout() { window.location.reload(); }
