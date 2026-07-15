@@ -130,23 +130,23 @@
       <div class="col-md-8">
         <div class="row mb-4">
           <div class="col-md-6 mb-3">
-            <div class="card p-4 text-center bg-primary text-white h-100">
-              <h5>🏆 คะแนนรวมปัจจุบัน</h5>
-              <h1 id="stuTotalPoints" class="display-4 fw-bold mt-2">0</h1>
-              <p class="mb-0">คะแนนสะสมจากทุกกิจกรรม</p>
+            <div class="card p-4 text-center bg-success text-white h-100">
+              <h5>✔ ภารกิจส่งแล้ว</h5>
+              <h1 id="stuSubmittedCount" class="display-4 fw-bold mt-2">0</h1>
+              <p class="mb-0">จำนวนงานทั้งหมดที่คุณครูตรวจรับแล้ว</p>
             </div>
           </div>
           <div class="col-md-6 mb-3">
             <div class="card p-4 text-center bg-warning text-dark h-100">
               <h5>⚠️ ภารกิจค้างส่ง</h5>
               <h1 id="stuMissingCount" class="display-4 fw-bold mt-2 text-danger">0</h1>
-              <p class="mb-0">งานที่ต้องรีบทำและนำมาส่ง</p>
+              <p class="mb-0">จำนวนงานค้างที่คุณครูสั่งแต่ยังไม่ได้ส่ง</p>
             </div>
           </div>
         </div>
 
         <div class="card p-4">
-          <h5 class="card-title mb-3 text-primary fw-bold">📝 ประวัติการส่งงานและคะแนนสะสม</h5>
+          <h5 class="card-title mb-3 text-primary fw-bold">📝 ประวัติภารกิจและการส่งงาน</h5>
           <div class="table-responsive">
             <table class="table table-hover">
               <thead class="table-light">
@@ -154,13 +154,12 @@
                   <th>รหัสงาน</th>
                   <th>ชื่องาน</th>
                   <th>กำหนดส่ง</th>
-                  <th class="text-center">คะแนนเต็ม</th>
-                  <th class="text-center">สถานะ</th>
+                  <th class="text-center">สถานะการส่ง</th>
                 </tr>
               </thead>
               <tbody id="studentJobsTableBody">
                 <tr>
-                  <td colspan="5" class="text-center text-muted">กำลังโหลดข้อมูล...</td>
+                  <td colspan="4" class="text-center text-muted">กำลังโหลดข้อมูล...</td>
                 </tr>
               </tbody>
             </table>
@@ -340,194 +339,4 @@
       callBackend({
         action: "createAssignment",
         name: name,
-        assignDate: assignDate,
-        dueDate: dueDate,
-        points: points,
-        teacherId: currentTeacherId
-      }).then(res => {
-        if(res.success) {
-          alert(res.message);
-          modal.hide();
-          // ล้างฟอร์ม
-          document.getElementById('newAssignName').value = "";
-          document.getElementById('newAssignPoint').value = "";
-          // โหลด dropdown งานใหม่
-          loadAssignments();
-        } else {
-          alert("ล้มเหลว: " + res.message);
-        }
-      });
-    }
-
-    // ดึงข้อมูลภาพรวมการเช็กงานและคะแนนของนักเรียน (นักเรียน)
-    function loadStudentDashboard() {
-      const tableBody = document.getElementById('studentJobsTableBody');
-      tableBody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">กำลังดึงข้อมูลคะแนน...</td></tr>`;
-
-      callBackend({ action: "getStudentDashboard", studentId: currentStudentId }).then(data => {
-        if (data.success) {
-          document.getElementById('stuTotalPoints').innerText = data.totalPoints;
-          document.getElementById('stuMissingCount').innerText = data.missingJobsCount;
-          
-          tableBody.innerHTML = "";
-          if(data.allJobs.length === 0) {
-            tableBody.innerHTML = `<tr><td colspan="5" class="text-center text-success fw-bold">ยินดีด้วย! ยังไม่มีงานใดๆ ที่ถูกสั่งในขณะนี้ 🎉</td></tr>`;
-            return;
-          }
-
-          data.allJobs.forEach(job => {
-            const tr = document.createElement('tr');
-            
-            // แสดงสถานะ สีเขียว=ส่งแล้ว / สีแดง=ยังไม่ส่ง
-            const statusBadge = job.status === "ส่งแล้ว" 
-              ? `<span class="badge bg-success">✔ ส่งแล้ว</span>`
-              : `<span class="badge bg-danger">❌ ยังไม่ส่ง</span>`;
-
-            tr.innerHTML = `
-              <td><strong>${job.id}</strong></td>
-              <td>${job.name} <small class="text-muted d-block">สั่ง: ${job.assignDate}</small></td>
-              <td><span class="text-secondary">${job.dueDate}</span></td>
-              <td class="text-center fw-bold text-primary">${job.maxPoints} คะแนน</td>
-              <td class="text-center">${statusBadge}</td>
-            `;
-            tableBody.appendChild(tr);
-          });
-        }
-      });
-    }
-
-    // ⚡️ เริ่มการทำงานของสแกนเนอร์ความเร็วสูง ⚡️
-    function startLightningScanner() {
-      const assignmentId = document.getElementById('assignmentSelect').value;
-      if (!assignmentId) { alert("กรุณาเลือกชิ้นงานก่อนตรวจครับ!"); return; }
-
-      videoElement = document.getElementById("hiddenVideo");
-      canvasElement = document.getElementById("previewCanvas");
-      canvasCtx = canvasElement.getContext("2d", { willReadFrequently: true });
-
-      document.getElementById('startCamBtn').classList.add('hidden');
-      document.getElementById('stopCamBtn').classList.remove('hidden');
-      document.getElementById('canvas-container').classList.remove('hidden');
-
-      navigator.mediaDevices.getUserMedia({
-        video: { 
-          facingMode: "environment",
-          width: { ideal: 640 }, 
-          height: { ideal: 480 },
-          frameRate: { ideal: 60 }
-        }
-      }).then(function(stream) {
-        videoStream = stream;
-        videoElement.srcObject = stream;
-        videoElement.play();
-        animationFrameId = requestAnimationFrame(tickScan);
-      }).catch(function(err) {
-        alert("ไม่สามารถเข้าถึงกล้องหลังได้: " + err);
-        stopLightningScanner();
-      });
-    }
-
-    function tickScan() {
-      if (videoElement && videoElement.readyState === videoElement.HAVE_ENOUGH_DATA) {
-        const vWidth = videoElement.videoWidth;
-        const vHeight = videoElement.videoHeight;
-        
-        canvasElement.width = vWidth;
-        canvasElement.height = vHeight;
-        
-        canvasCtx.drawImage(videoElement, 0, 0, vWidth, vHeight);
-        
-        const roiX = Math.floor(vWidth * 0.15);
-        const roiY = Math.floor(vHeight * 0.15);
-        const roiWidth = Math.floor(vWidth * 0.7);
-        const roiHeight = Math.floor(vHeight * 0.7);
-        
-        const imageData = canvasCtx.getImageData(roiX, roiY, roiWidth, roiHeight);
-        
-        const code = jsQR(imageData.data, imageData.width, imageData.height, {
-          inversionAttempts: "dontInvert"
-        });
-
-        if (code && code.data) {
-          onScanMatched(code.data);
-        }
-      }
-      if (videoStream) {
-        animationFrameId = requestAnimationFrame(tickScan);
-      }
-    }
-
-    function stopLightningScanner() {
-      if (animationFrameId) cancelAnimationFrame(animationFrameId);
-      if (videoStream) {
-        videoStream.getTracks().forEach(track => track.stop());
-        videoStream = null;
-      }
-      document.getElementById('startCamBtn').classList.remove('hidden');
-      document.getElementById('stopCamBtn').classList.add('hidden');
-      document.getElementById('canvas-container').classList.add('hidden');
-    }
-
-    function onScanMatched(decodedText) {
-      const cleanStudentId = String(decodedText).trim();
-
-      if (isProcessing || cleanStudentId === lastScannedText) return;
-      isProcessing = true;
-      lastScannedText = cleanStudentId;
-
-      const assignmentId = document.getElementById('assignmentSelect').value;
-
-      callBackend({ action: "processQrScan", studentId: cleanStudentId, assignmentId: assignmentId, teacherId: currentTeacherId })
-        .then(result => {
-          const resBox = document.getElementById('resultMessage');
-          resBox.classList.remove('hidden', 'bg-success-custom', 'bg-danger-custom');
-          document.body.classList.remove('scan-success-flash', 'scan-delay-flash');
-
-          if(result.success) {
-            playSuccessSound();
-            resBox.className = "result-box bg-success-custom";
-            resBox.innerHTML = `✔ ${result.message}<br>เลขที่ ${result.student.number} : ${result.student.name}`;
-            document.body.classList.add('scan-success-flash');
-            updateDashboard();
-          } else {
-            playErrorSound();
-            resBox.className = "result-box bg-danger-custom";
-            if(result.status === 'duplicate') {
-              resBox.innerHTML = `❌ ${result.message}<br>เลขที่ ${result.student.number} : ${result.student.name} ส่งแล้ว`;
-            } else {
-              resBox.innerHTML = `❌ ${result.message}`;
-            }
-            document.body.classList.add('scan-delay-flash');
-          }
-
-          setTimeout(() => {
-            document.body.classList.remove('scan-success-flash', 'scan-delay-flash');
-            isProcessing = false;
-          }, 300);
-
-          setTimeout(() => { if(lastScannedText === cleanStudentId) lastScannedText = ""; }, 2000);
-        });
-    }
-
-    function updateDashboard() {
-      const assignmentId = document.getElementById('assignmentSelect').value;
-      if (!assignmentId) return;
-      callBackend({ action: "getDashboardData", assignmentId: assignmentId }).then(dash => {
-        document.getElementById('dashSubmitted').innerText = dash.submittedCount;
-        document.getElementById('dashMissing').innerText = dash.missingCount;
-        const listUl = document.getElementById('missingList'); listUl.innerHTML = "";
-        if(dash.missingList.length === 0) {
-          listUl.innerHTML = '<li class="list-group-item text-success text-center fw-bold">ส่งครบทุกคนแล้ว! 🎉</li>';
-        } else {
-          dash.missingList.forEach(name => {
-            let li = document.createElement('li'); li.className = "list-group-item text-danger"; li.innerText = name;
-            listUl.appendChild(li);
-          });
-        }
-      });
-    }
-
-    function logout() { window.location.reload(); }
-  </script>
-</body>
-</html>
+        assign
