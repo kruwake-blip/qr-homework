@@ -5,18 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ระบบเช็กการส่งงาน QR Homework</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <script src="https://unpkg.com/html5-qrcode"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
   <style>
     body { background-color: #f8f9fa; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; transition: background-color 0.15s ease; }
     .card { border: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
     .hidden { display: none; }
-    #reader { width: 100%; max-width: 450px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+    #canvas-container { width: 100%; max-width: 450px; margin: 0 auto; position: relative; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.15); background: #000; }
+    #previewCanvas { width: 100%; height: auto; display: block; }
+    .scan-laser { position: absolute; top: 0; left: 0; width: 100%; height: 3px; background-color: #0d6efd; opacity: 0.7; animation: laserMove 2s infinite linear; }
+    @keyframes laserMove { 0% { top: 0%; } 50% { top: 100%; } 100% { top: 0%; } }
     .result-box { padding: 20px; border-radius: 8px; font-weight: bold; text-align: center; margin-top: 15px; font-size: 1.2rem; }
     .bg-success-custom { background-color: #d1e7dd; color: #0f5132; border: 3px solid #badbcc; }
     .bg-danger-custom { background-color: #f8d7da; color: #842029; border: 3px solid #f5c2c7; }
     body.scan-success-flash { background-color: #a3cfbb !important; }
     body.scan-delay-flash { background-color: #f1aeb5 !important; }
-    video { object-fit: cover !important; width: 100% !important; height: 100% !important; }
   </style>
 </head>
 <body>
@@ -56,11 +58,14 @@
 
           <h5 class="card-title mb-3">2. ส่อง QR Code เพื่อตรวจทันที</h5>
           <div class="text-center mb-3">
-            <button id="startCamBtn" onclick="startLiveScanner()" class="btn btn-success btn-lg w-100 py-3 mb-2">📷 เปิดกล้องสแกนความเร็วสูง</button>
-            <button id="stopCamBtn" onclick="stopLiveScanner()" class="btn btn-danger w-100 mb-2 hidden">ปิดกล้อง</button>
+            <button id="startCamBtn" onclick="startLightningScanner()" class="btn btn-success btn-lg w-100 py-3 mb-2">📷 เปิดกล้องสแกนสายฟ้าแลบ</button>
+            <button id="stopCamBtn" onclick="stopLightningScanner()" class="btn btn-danger w-100 mb-2 hidden">ปิดกล้อง</button>
           </div>
           
-          <div id="reader"></div>
+          <div id="canvas-container" class="hidden">
+            <canvas id="previewCanvas"></canvas>
+            <div class="scan-laser"></div>
+          </div>
           <div id="resultMessage" class="result-box hidden"></div>
         </div>
       </div>
@@ -97,42 +102,45 @@
       if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       if (audioCtx.state === 'suspended') audioCtx.resume();
       playSuccessSound();
-      alert("ระบบเสียงพร้อมทำงานแล้วครับ!");
+      alert("ระบบเสียงตื๊ดพร้อมทำงาน!");
     }
     function playSuccessSound() {
       try {
         if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        let osc = audioCtx.createOscillator();
-        let gain = audioCtx.createGain();
+        let osc = audioCtx.createOscillator(); let gain = audioCtx.createGain();
         osc.connect(gain); gain.connect(audioCtx.destination);
-        osc.type = "sine"; osc.frequency.setValueAtTime(1200, audioCtx.currentTime);
+        osc.type = "sine"; osc.frequency.setValueAtTime(1300, audioCtx.currentTime);
         gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
-        osc.start(); osc.stop(audioCtx.currentTime + 0.1);
-      } catch (e) { console.log(e); }
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.08);
+        osc.start(); osc.stop(audioCtx.currentTime + 0.08);
+      } catch (e) {}
     }
     function playErrorSound() {
       try {
         if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        let osc = audioCtx.createOscillator();
-        let gain = audioCtx.createGain();
+        let osc = audioCtx.createOscillator(); let gain = audioCtx.createGain();
         osc.connect(gain); gain.connect(audioCtx.destination);
-        osc.type = "triangle"; osc.frequency.setValueAtTime(200, audioCtx.currentTime);
+        osc.type = "triangle"; osc.frequency.setValueAtTime(190, audioCtx.currentTime);
         gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.25);
         osc.start(); osc.stop(audioCtx.currentTime + 0.25);
-      } catch (e) { console.log(e); }
+      } catch (e) {}
     }
   </script>
 
   <script>
-    // ⚠️ นำ URL Web App จาก Google Script ของคุณครูมาวางแทนข้อความด้านล่างนี้ ⚠️
+    // 🌟 ใส่ URL Google Apps Script ของคุณครูให้แบบอัตโนมัติเรียบร้อยครับ 🌟
     const BACKEND_URL = "https://script.google.com/macros/s/AKfycbzuXvt7_gU_PS34AvWmNZ9XSKIx68Gk76yUC7WvMU_8esPHL53hXOHgLxnXcCdY5Oa-/exec";
 
     let currentTeacherId = "";
-    let html5QrCodeLive = null;
     let isProcessing = false;
     let lastScannedText = "";
+    
+    // ตัวแปรสำหรับควบคุมวิดีโอและ Canvas
+    let videoStream = null;
+    let animationFrameId = null;
+    const videoElement = document.createElement("video");
+    let canvasElement, canvasCtx;
 
     async function callBackend(data) {
       const response = await fetch(BACKEND_URL, { method: "POST", body: JSON.stringify(data) });
@@ -144,7 +152,7 @@
       if (audioCtx.state === 'suspended') audioCtx.resume();
       const user = document.getElementById('username').value;
       const pass = document.getElementById('password').value;
-      if(!user || !pass) { document.getElementById('loginError').innerText = "กรุณากรอกข้อมูลให้ครบถ้วน"; return; }
+      if(!user || !pass) { alert("กรุณากรอกข้อมูลให้ครบถ้วน"); return; }
       document.getElementById('loginError').innerText = "กำลังเข้าสู่ระบบ...";
       callBackend({ action: "checkLogin", username: user, password: pass }).then(response => {
         if(response.success) {
@@ -168,138 +176,38 @@
       });
     }
 
-    // ⚡️ กลไกค้นหากล้องหลังและเปิดสแกนแบบลากผ่านติดทันที ⚡️
-    function startLiveScanner() {
+    // ⚡️ กลไกเปิดกล้องหลังและเตรียมการประมวลผลความเร็วสูง ⚡️
+    function startLightningScanner() {
       const assignmentId = document.getElementById('assignmentSelect').value;
-      if (!assignmentId) { alert("กรุณาเลือกชิ้นงานก่อนเปิดกล้องครับ!"); return; }
+      if (!assignmentId) { alert("กรุณาเลือกชิ้นงานก่อนตรวจครับ!"); return; }
 
-      if (!html5QrCodeLive) html5QrCodeLive = new Html5Qrcode("reader");
+      canvasElement = document.getElementById("previewCanvas");
+      canvasCtx = canvasElement.getContext("2d", { willReadFrequently: true });
 
       document.getElementById('startCamBtn').classList.add('hidden');
       document.getElementById('stopCamBtn').classList.remove('hidden');
+      document.getElementById('canvas-container').classList.remove('hidden');
 
-      // ขั้นตอนค้นหารายชื่อกล้องทั้งหมดในเครื่อง
-      Html5Qrcode.getCameras().then(cameras => {
-        if (cameras && cameras.length > 0) {
-          let backCamera = null;
-          // วิ่งหาคำว่า back หรือ environment หรือมองหากล้องตัวท้ายๆ (มักจะเป็นกล้องหลัง)
-          for (let i = 0; i < cameras.length; i++) {
-            let label = cameras[i].label.toLowerCase();
-            if (label.includes("back") || label.includes("rear") || label.includes("environment") || label.includes("หลัง")) {
-              backCamera = cameras[i];
-              break;
-            }
-          }
-          // ถ้าไม่เจอป้ายกำกับ ให้ใช้ตัวสุดท้ายในลิสต์ (99% บนอุปกรณ์พกพาคือกล้องหลังหลัก)
-          if (!backCamera) backCamera = cameras[cameras.length - 1];
-
-          // สั่งรันกล้องตัวที่ถูกเลือกด้วย Config ความเร็วระดับ 60FPS
-          html5QrCodeLive.start(
-            backCamera.id,
-            {
-              fps: 60, // เร่งประมวลผลสูงสุด 60 ครั้งต่อวินาที ลากผ่านก็เจอ
-              qrbox: function(viewfinderWidth, viewfinderHeight) {
-                // ขยายกล่องตรวจจับให้ใหญ่ถึง 90% ของภาพ (ไม่ต้องเล็งตรงกลาง แค่เข้ามาในจอก็ติด)
-                let minEdge = Math.min(viewfinderWidth, viewfinderHeight);
-                let edgeSize = Math.floor(minEdge * 0.9);
-                return { width: edgeSize, height: edgeSize };
-              },
-              experimentalFeatures: { useBarCodeDetectorIfSupported: true } // เรียกใช้ชิปฮาร์ดแวร์เสริม
-            },
-            onLiveScanSuccess,
-            onLiveScanFailure
-          ).catch(err => { fallbackCameraStart(); });
-        } else { fallbackCameraStart(); }
-      }).catch(err => { fallbackCameraStart(); });
-    }
-
-    // ฟังก์ชันสำรองกรณีระบบอ่านชื่อ ID กล้องไม่ได้ ให้บังคับดึงกล้องหลังโดยตรง
-    function fallbackCameraStart() {
-      html5QrCodeLive.start(
-        { facingMode: "environment" },
-        { fps: 60, qrbox: { width: 300, height: 300 }, experimentalFeatures: { useBarCodeDetectorIfSupported: true } },
-        onLiveScanSuccess,
-        onLiveScanFailure
-      ).catch(err => {
-        alert("ไม่สามารถเข้าถึงกล้องหลังได้: " + err);
-        stopLiveScanner();
-      });
-    }
-
-    function stopLiveScanner() {
-      if (html5QrCodeLive && html5QrCodeLive.isScanning) {
-        html5QrCodeLive.stop().then(() => {
-          document.getElementById('startCamBtn').classList.remove('hidden');
-          document.getElementById('stopCamBtn').classList.add('hidden');
-        });
-      }
-    }
-
-    function onLiveScanSuccess(decodedText) {
-      const cleanStudentId = String(decodedText).trim();
-
-      // บล็อกการแสกนซ้ำซ้อนของรหัสเดิมทันที เพื่อเพิ่มความเสถียร
-      if (isProcessing || cleanStudentId === lastScannedText) return;
-      isProcessing = true;
-      lastScannedText = cleanStudentId;
-
-      const assignmentId = document.getElementById('assignmentSelect').value;
-
-      callBackend({ action: "processQrScan", studentId: cleanStudentId, assignmentId: assignmentId, teacherId: currentTeacherId })
-        .then(result => {
-          const resBox = document.getElementById('resultMessage');
-          resBox.classList.remove('hidden', 'bg-success-custom', 'bg-danger-custom');
-          document.body.classList.remove('scan-success-flash', 'scan-delay-flash');
-
-          if(result.success) {
-            playSuccessSound(); // 🔊 เสียงบี๊บสำเร็จ
-            resBox.className = "result-box bg-success-custom";
-            resBox.innerHTML = `✔ ${result.message}<br>เลขที่ ${result.student.number} : ${result.student.name}`;
-            document.body.classList.add('scan-success-flash');
-            updateDashboard();
-          } else {
-            playErrorSound(); // 🔊 เสียงเตือนล้มเหลว/ส่งซ้ำ
-            resBox.className = "result-box bg-danger-custom";
-            if(result.status === 'duplicate') {
-              resBox.innerHTML = `❌ ${result.message}<br>เลขที่ ${result.student.number} : ${result.student.name} ส่งแล้ว`;
-            } else {
-              resBox.innerHTML = `❌ ${result.message}`;
-            }
-            document.body.classList.add('scan-delay-flash');
-          }
-
-          // ปลดล็อกระบบให้พร้อมสแกนใบถัดไปทันทีใน 0.8 วินาที (เร็วขึ้นกว่าเดิม)
-          setTimeout(() => {
-            document.body.classList.remove('scan-success-flash', 'scan-delay-flash');
-            isProcessing = false;
-          }, 800);
-
-          // ล้างประวัติเพื่อสแกนใบเดิมซ้ำได้หลังผ่านไป 2 วินาที
-          setTimeout(() => { if(lastScannedText === cleanStudentId) lastScannedText = ""; }, 2000);
-        });
-    }
-
-    function onLiveScanFailure(error) {}
-
-    function updateDashboard() {
-      const assignmentId = document.getElementById('assignmentSelect').value;
-      if (!assignmentId) return;
-      callBackend({ action: "getDashboardData", assignmentId: assignmentId }).then(dash => {
-        document.getElementById('dashSubmitted').innerText = dash.submittedCount;
-        document.getElementById('dashMissing').innerText = dash.missingCount;
-        const listUl = document.getElementById('missingList'); listUl.innerHTML = "";
-        if(dash.missingList.length === 0) {
-          listUl.innerHTML = '<li class="list-group-item text-success text-center fw-bold">ส่งครบทุกคนแล้ว! 🎉</li>';
-        } else {
-          dash.missingList.forEach(name => {
-            let li = document.createElement('li'); li.className = "list-group-item text-danger"; li.innerText = name;
-            listUl.appendChild(li);
-          });
+      // รันเปิดกล้องหลังของเครื่องทันที
+      navigator.mediaDevices.getUserMedia({
+        video: { 
+          facingMode: "environment",
+          width: { ideal: 640 }, 
+          height: { ideal: 480 },
+          frameRate: { ideal: 60 }
         }
+      }).then(function(stream) {
+        videoStream = stream;
+        videoElement.srcObject = stream;
+        videoElement.setAttribute("playsinline", true); 
+        videoElement.play();
+        // เริ่มลูปถอดรหัสพิกเซลความเร็วสูง
+        animationFrameId = requestAnimationFrame(tickScan);
+      }).catch(function(err) {
+        alert("ไม่สามารถเข้าถึงกล้องหลังหลักของเครื่องได้: " + err);
+        stopLightningScanner();
       });
     }
 
-    function logout() { window.location.reload(); }
-  </script>
-</body>
-</html>
+    // ลูปประมวลผลความเร็วสูงแกะภาพเฟรมสด (ลากผ่านปุ๊บแกะค่าปั๊บทันที)
+    function tickScan() {
