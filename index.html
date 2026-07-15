@@ -185,7 +185,6 @@
       const assignmentId = document.getElementById('assignmentSelect').value;
       document.getElementById('beepAudio').play();
 
-      // บังคับแปลงเป็น String และล้างช่องว่าง ก่อนส่งไปทำงาน
       const cleanStudentId = String(decodedText).trim();
 
       callBackend({ action: "processQrScan", studentId: cleanStudentId, assignmentId: assignmentId, teacherId: currentTeacherId })
