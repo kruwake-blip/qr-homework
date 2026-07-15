@@ -7,7 +7,7 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <script src="https://unpkg.com/html5-qrcode"></script>
   <style>
-    body { background-color: #f8f9fa; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; transition: background-color 0.3s ease; }
+    body { background-color: #f8f9fa; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; transition: background-color 0.15s ease; }
     .card { border: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
     .hidden { display: none; }
     #reader { width: 100%; max-width: 450px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
@@ -16,6 +16,7 @@
     .bg-danger-custom { background-color: #f8d7da; color: #842029; border: 3px solid #f5c2c7; }
     body.scan-success-flash { background-color: #a3cfbb !important; }
     body.scan-delay-flash { background-color: #f1aeb5 !important; }
+    video { object-fit: cover !important; }
   </style>
 </head>
 <body>
@@ -33,7 +34,8 @@
             <label class="form-label">Password</label>
             <input type="password" id="password" class="form-control" placeholder="กรอกรหัสผ่าน">
           </div>
-          <button onclick="login()" class="btn btn-primary w-100 py-2">เข้าสู่ระบบ</button>
+          <button onclick="login()" class="btn btn-primary w-100 py-2 mb-3">เข้าสู่ระบบ</button>
+          <button onclick="unlockAudio()" class="btn btn-sm btn-outline-secondary w-100 mb-2">🔊 ทดสอบ/ปลดล็อกเสียงเสียงเตือนบนมือถือ</button>
           <div id="loginError" class="text-danger text-center mt-3"></div>
         </div>
       </div>
@@ -89,7 +91,60 @@
     </div>
   </div>
 
-  <audio id="beepAudio" src="https://assets.mixkit.co/active_storage/sfx/2568/2568-84.wav" preload="auto"></audio>
+  <script>
+    let audioCtx = null;
+
+    // ฟังก์ชันปลดล็อกระบบเสียงสำหรับอุปกรณ์ iOS/Android
+    function unlockAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      // เล่นเสียงสั้นๆ ทดสอบความพร้อม
+      playSuccessSound();
+      alert("เปิดใช้ระบบเสียงเตือนเรียบร้อยแล้วครับ!");
+    }
+
+    // เสียงบี๊บตื๊ดใสๆ (สำเร็จ)
+    function playSuccessSound() {
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        let osc = audioCtx.createOscillator();
+        let gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(1050, audioCtx.currentTime); // โทนเสียงแหลมใส
+        gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+        
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.15);
+      } catch (e) { console.log(e); }
+    }
+
+    // เสียงวืดดดดโทนต่ำ (ล้มเหลว/ส่งซ้ำ)
+    function playErrorSound() {
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        let osc = audioCtx.createOscillator();
+        let gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        
+        osc.type = "sawtooth"; // คลื่นเสียงหยาบเพื่อเตือน
+        osc.frequency.setValueAtTime(220, audioCtx.currentTime); // โทนเสียงต่ำ
+        gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.35);
+        
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.35);
+      } catch (e) { console.log(e); }
+    }
+  </script>
 
   <script>
     // ⚠️ นำ URL Web App จาก Google Script (ลงท้ายด้วย /exec) มาใส่แทนข้อความด้านล่างนี้ ⚠️
@@ -98,6 +153,7 @@
     let currentTeacherId = "";
     let html5QrCodeLive = null;
     let isProcessing = false;
+    let lastScannedText = ""; // ตัวกรองป้องกันการอ่านค่ารหัสเดิมซ้ำซ้อนทันที
 
     async function callBackend(data) {
       const response = await fetch(BACKEND_URL, {
@@ -108,6 +164,10 @@
     }
 
     function login() {
+      // เปิดใช้เสียงโดยอัตโนมัติเมื่อกดล็อกอิน
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+
       const user = document.getElementById('username').value;
       const pass = document.getElementById('password').value;
       
@@ -158,20 +218,24 @@
       document.getElementById('startCamBtn').classList.add('hidden');
       document.getElementById('stopCamBtn').classList.remove('hidden');
 
-      // 🌟 จูนการตั้งค่ากล้องใหม่ เพื่อการสแกนความเร็วสูงพิเศษ 🌟
+      // ⚡️ เพิ่มประสิทธิภาพความละเอียดและการเร่งประสิทธิกล้องให้สูงสุด ⚡️
       html5QrCodeLive.start(
         { facingMode: "environment" },
         { 
-          fps: 24, // เพิ่มความถี่ในการดึงภาพจับสัญญาณให้ถถี่ขึ้น (วิดีโอลื่นไหลขึ้น)
+          fps: 40, // เร่งความถี่เฟรมให้ลื่นและเร็วขึ้นอีกเกือบสองเท่า
           qrbox: function(viewfinderWidth, viewfinderHeight) {
-            // ขยายกรอบรับข้อมูลเป็น 70% ของหน้าจอ เพื่อให้สแกนระยะไกลและถือสแกนผ่านๆ ได้ทันที
+            // ดึงขอบสแกน 80% ปรับมุมตรวจจับให้ใหญ่เต็มเฟรมภาพ
             var minEdge = Math.min(viewfinderWidth, viewfinderHeight);
-            var edgeSize = Math.floor(minEdge * 0.7);
+            var edgeSize = Math.floor(minEdge * 0.8);
             return { width: edgeSize, height: edgeSize };
           },
-          aspectRatio: 1.0,
+          videoConstraints: {
+            width: { ideal: 640 }, // ลดความละเอียดลงเล็กน้อยเป็น VGA เพื่อเพิ่มการทำงานระดับสายฟ้าแลบ
+            height: { ideal: 480 },
+            focusMode: "continuous" // สั่งให้กล้อง Focus ตลอดเวลาโดยไม่ต้องจับภาพค้างนิ่งๆ
+          },
           experimentalFeatures: {
-            useBarCodeDetectorIfSupported: true // 🔥 ไม้ตาย: ดึงพลังจากชิปฮาร์ดแวร์มือถือมาสแกนไวระดับมิลลิวินาที
+            useBarCodeDetectorIfSupported: true // ดึง API การตรวจจับจากฮาร์ดแวร์โดยตรง
           }
         },
         onLiveScanSuccess,
@@ -192,13 +256,14 @@
     }
 
     function onLiveScanSuccess(decodedText) {
-      if (isProcessing) return;
+      const cleanStudentId = String(decodedText).trim();
+
+      // ป้องกันการแสกนซ้ำตัวเดิมซ้อนๆ กันในระยะ 1 วินาที
+      if (isProcessing || cleanStudentId === lastScannedText) return;
       isProcessing = true;
+      lastScannedText = cleanStudentId;
 
       const assignmentId = document.getElementById('assignmentSelect').value;
-      document.getElementById('beepAudio').play();
-
-      const cleanStudentId = String(decodedText).trim();
 
       callBackend({ action: "processQrScan", studentId: cleanStudentId, assignmentId: assignmentId, teacherId: currentTeacherId })
         .then(result => {
@@ -207,11 +272,13 @@
           document.body.classList.remove('scan-success-flash', 'scan-delay-flash');
 
           if(result.success) {
+            playSuccessSound(); // 🔊 ตื๊ดใสๆ (สำเร็จ)
             resBox.className = "result-box bg-success-custom";
             resBox.innerHTML = `✔ ${result.message}<br>เลขที่ ${result.student.number} : ${result.student.name}`;
             document.body.classList.add('scan-success-flash');
             updateDashboard();
           } else {
+            playErrorSound(); // 🔊 วืดดดดต่ำ (ล้มเหลว/ส่งซ้ำ)
             resBox.className = "result-box bg-danger-custom";
             if(result.status === 'duplicate') {
               resBox.innerHTML = `❌ ${result.message}<br>เลขที่ ${result.student.number} : ${result.student.name} ส่งแล้ว`;
@@ -221,11 +288,18 @@
             document.body.classList.add('scan-delay-flash');
           }
 
-          // ปรับความเร็วในการเปิดรับสแกนคิวอาร์อันถัดไปให้ไวขึ้นเป็น 1.2 วินาที
+          // ปล่อยให้พร้อมสแกนคิวอาร์อันถัดไปทันทีใน 1 วินาที
           setTimeout(() => {
             document.body.classList.remove('scan-success-flash', 'scan-delay-flash');
             isProcessing = false;
-          }, 1200);
+          }, 1000);
+
+          // ลบหน่วยความจำการอ่านซ้ำหลังผ่านไป 2 วินาที (เพื่อให้สแกนนักเรียนคนเดิมซ้ำได้เผื่อกรณีจำเป็น)
+          setTimeout(() => {
+            if(lastScannedText === cleanStudentId) {
+              lastScannedText = "";
+            }
+          }, 2000);
         });
     }
 
