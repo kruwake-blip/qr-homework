@@ -57,7 +57,7 @@
             <input type="password" id="password" class="form-control" placeholder="กรอกรหัสผ่าน">
           </div>
           <button onclick="handleLogin()" class="btn btn-primary w-100 py-2 mb-3">เข้าสู่ระบบ</button>
-          <button onclick="unlockAudio()" class="btn btn-sm btn-outline-secondary w-100 mb-2">🔊 ทดสอบระบบเสียงเตือน</button>
+          <button onclick="unlockAudio()" class="btn btn-sm btn-outline-secondary w-100 mb-2">🔊 เปิดใช้งานระบบเสียงเตือน</button>
           <div id="loginError" class="text-danger text-center mt-3 fw-bold"></div>
         </div>
       </div>
@@ -174,7 +174,7 @@
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title text-primary fw-bold">➕ เพิ่มภารกิจงานใหม่</h5>
-          <button type="button" class="btn-close" data-bs-toggle="modal" aria-label="Close"></button>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
           <div class="mb-3">
@@ -219,14 +219,22 @@
   <script>
     let audioCtx = null;
     function unlockAudio() {
-      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      if (audioCtx.state === 'suspended') audioCtx.resume();
-      playSuccessSound();
-      alert("ระบบเสียงสัญญาณพร้อมใช้งานแล้วครับ!");
+      try {
+        if (!audioCtx) {
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+        playSuccessSound();
+        alert("เปิดสัญญาณระบบเสียงเรียบร้อยแล้ว เบราว์เซอร์ Safari สามารถทำงานได้แล้วครับ!");
+      } catch (e) {
+        alert("ไม่สามารถเปิดระบบเสียงได้: " + e.message);
+      }
     }
     function playSuccessSound() {
       try {
-        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (!audioCtx) return;
         let osc = audioCtx.createOscillator(); let gain = audioCtx.createGain();
         osc.connect(gain); gain.connect(audioCtx.destination);
         osc.type = "sine"; osc.frequency.setValueAtTime(1400, audioCtx.currentTime);
@@ -237,7 +245,7 @@
     }
     function playErrorSound() {
       try {
-        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (!audioCtx) return;
         let osc = audioCtx.createOscillator(); let gain = audioCtx.createGain();
         osc.connect(gain); gain.connect(audioCtx.destination);
         osc.type = "triangle"; osc.frequency.setValueAtTime(180, audioCtx.currentTime);
@@ -262,22 +270,37 @@
     let animationFrameId = null;
     let videoElement, canvasElement, canvasCtx;
 
+    // แก้ไขฟังก์ชันเรียก Fetch ให้เข้ากันได้กับนโยบายความปลอดภัยสูงสุดของ Safari
     async function callBackend(data) {
-      const response = await fetch(BACKEND_URL, { method: "POST", body: JSON.stringify(data) });
+      const response = await fetch(BACKEND_URL, {
+        method: "POST",
+        mode: "cors", // เปิดโหมดแชร์ทรัพยากรข้ามเว็บไซต์อย่างชัดเจนเพื่อ Safari
+        headers: {
+          "Content-Type": "text/plain;charset=utf-8"
+        },
+        body: JSON.stringify(data)
+      });
       return await response.json();
     }
 
-    // ฟังก์ชันจัดการ Login (แก้ไขจับคู่คีย์เวิร์ดให้ตรงกับตัวแปรของแผ่นงานหลังบ้าน)
+    // ฟังก์ชันเข้าสู่ระบบที่ปลอดภัยต่อการใช้งานใน Safari
     function handleLogin() {
-      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      if (audioCtx.state === 'suspended') audioCtx.resume();
+      // เปิดใช้ AudioContext แบบแฝง เพื่อเลี่ยงการโดนบล็อกจาก Apple Security
+      if (window.AudioContext || window.webkitAudioContext) {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+      }
       
       const user = document.getElementById('username').value.trim();
       const pass = document.getElementById('password').value.trim();
-      if(!user || !pass) { alert("กรุณากรอกชื่อผู้ใช้และรหัสผ่านให้ครบถ้วนครับ"); return; }
+      
+      if(!user || !pass) { 
+        alert("กรุณากรอกชื่อผู้ใช้และรหัสผ่านให้ครบถ้วนครับ"); 
+        return; 
+      }
       
       const role = document.querySelector('input[name="roleSelect"]:checked').value;
-      document.getElementById('loginError').innerText = "กำลังเข้าสู่ระบบ...";
+      document.getElementById('loginError').innerText = "กำลังเชื่อมต่อกับฐานข้อมูล...";
 
       if (role === "teacher") {
         callBackend({ action: "checkLogin", username: user, password: pass }).then(response => {
@@ -290,7 +313,9 @@
           } else { 
             document.getElementById('loginError').innerText = response.message; 
           }
-        }).catch(e => { document.getElementById('loginError').innerText = "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์ครู"; });
+        }).catch(e => { 
+          document.getElementById('loginError').innerText = "ล็อกอินไม่สำเร็จ โปรดกดปุ่ม 'เปิดใช้งานระบบเสียงเตือน' ก่อนกดเข้าสู่ระบบอีกครั้ง"; 
+        });
       } else {
         callBackend({ action: "studentLogin", username: user, password: pass }).then(response => {
           if(response.success) {
@@ -302,11 +327,12 @@
           } else {
             document.getElementById('loginError').innerText = response.message;
           }
-        }).catch(e => { document.getElementById('loginError').innerText = "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์นักเรียน"; });
+        }).catch(e => { 
+          document.getElementById('loginError').innerText = "ล็อกอินไม่สำเร็จ โปรดกดปุ่ม 'เปิดใช้งานระบบเสียงเตือน' ก่อนกดเข้าสู่ระบบอีกครั้ง"; 
+        });
       }
     }
 
-    // ดึงงานมาใส่ Dropdown (ครู)
     function loadAssignments() {
       callBackend({ action: "getAssignments" }).then(assignments => {
         const select = document.getElementById('assignmentSelect');
@@ -318,7 +344,6 @@
       });
     }
 
-    // ส่งคำขอบันทึก Assignment ใหม่ไปยัง Google Sheet
     function submitNewAssignment() {
       const name = document.getElementById('newAssignName').value;
       const assignDate = document.getElementById('newAssignDate').value;
@@ -353,7 +378,6 @@
       });
     }
 
-    // ดึงข้อมูลภาพรวมการเช็กงานของนักเรียน (ไม่แสดงคะแนน)
     function loadStudentDashboard() {
       const tableBody = document.getElementById('studentJobsTableBody');
       tableBody.innerHTML = `<tr><td colspan="4" class="text-center text-muted">กำลังดึงข้อมูล...</td></tr>`;
@@ -387,7 +411,6 @@
       });
     }
 
-    // เริ่มการทำงานของสแกนเนอร์ความเร็วสูง
     function startLightningScanner() {
       const assignmentId = document.getElementById('assignmentSelect').value;
       if (!assignmentId) { alert("กรุณาเลือกชิ้นงานก่อนตรวจครับ!"); return; }
