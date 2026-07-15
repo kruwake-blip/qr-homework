@@ -92,14 +92,13 @@
   <audio id="beepAudio" src="https://assets.mixkit.co/active_storage/sfx/2568/2568-84.wav" preload="auto"></audio>
 
   <script>
-    // 🌟 นำ URL เว็บแอปที่ก๊อปปี้มาจากขั้นตอนที่ 2 มาวางแทนที่ตรงนี้ครับ 🌟
+    // ⚠️ อย่าลืมนำ URL Web App ที่ได้จาก Google Script (ลงท้ายด้วย /exec) มาใส่ในเครื่องหมายคำพูดด้านล่างนี้ครับ ⚠️
     const BACKEND_URL = "https://script.google.com/macros/s/AKfycbzuXvt7_gU_PS34AvWmNZ9XSKIx68Gk76yUC7WvMU_8esPHL53hXOHgLxnXcCdY5Oa-/exec";
 
     let currentTeacherId = "";
     let html5QrCodeLive = null;
     let isProcessing = false;
 
-    // ฟังก์ชันช่วยยิงข้อมูลไปหา Google Apps Script หลังบ้าน
     async function callBackend(data) {
       const response = await fetch(BACKEND_URL, {
         method: "POST",
@@ -186,7 +185,10 @@
       const assignmentId = document.getElementById('assignmentSelect').value;
       document.getElementById('beepAudio').play();
 
-      callBackend({ action: "processQrScan", studentId: decodedText.trim(), assignmentId: assignmentId, teacherId: currentTeacherId })
+      // ล้างเว้นวรรคและอักขระพิเศษออกจาก Text ที่สแกนได้ก่อนส่งข้ามระบบ
+      const cleanStudentId = String(decodedText).replace(/[\r\n\t\s]/g, '').trim();
+
+      callBackend({ action: "processQrScan", studentId: cleanStudentId, assignmentId: assignmentId, teacherId: currentTeacherId })
         .then(result => {
           const resBox = document.getElementById('resultMessage');
           resBox.classList.remove('hidden', 'bg-success-custom', 'bg-danger-custom');
@@ -216,6 +218,7 @@
 
     function onLiveScanFailure(error) {}
 
+    // ฟังก์ชันดึงค่า Dashboard มาแสดงผลจริง
     function updateDashboard() {
       const assignmentId = document.getElementById('assignmentSelect').value;
       if (!assignmentId) return;
