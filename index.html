@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ระบบเช็กการส่งงาน QR Homework</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <style>
+    body { background-color: #f8f9fa; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; transition: background-color 0.3s ease; }
+    .card { border: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    .hidden { display: none; }
+    #reader { width: 100%; max-width: 450px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+    .result-box { padding: 20px; border-radius: 8px; font-weight: bold; text-align: center; margin-top: 15px; font-size: 1.2rem; }
+    .bg-success-custom { background-color: #d1e7dd; color: #0f5132; border: 3px solid #badbcc; }
+    .bg-danger-custom { background-color: #f8d7da; color: #842029; border: 3px solid #f5c2c7; }
+    body.scan-success-flash { background-color: #a3cfbb !important; }
+    body.scan-delay-flash { background-color: #f1aeb5 !important; }
+  </style>
+</head>
+<body>
+
+  <div class="container py-4">
+    <div id="loginSection" class="row justify-content-center">
+      <div class="col-md-5">
+        <div class="card p-4 mt-5">
+          <h3 class="text-center mb-4 text-primary">QR Homework Login</h3>
+          <div class="mb-3">
+            <label class="form-label">Username</label>
+            <input type="text" id="username" class="form-control" placeholder="กรอกชื่อผู้ใช้">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Password</label>
+            <input type="password" id="password" class="form-control" placeholder="กรอกรหัสผ่าน">
+          </div>
+          <button onclick="login()" class="btn btn-primary w-100 py-2">เข้าสู่ระบบ</button>
+          <div id="loginError" class="text-danger text-center mt-3"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="mainSection" class="row justify-content-center hidden">
+      <div class="col-md-8 text-center mb-4">
+        <h4>คุณครูผู้ตรวจ: <span id="teacherNameTxt" class="text-success"></span></h4>
+        <button onclick="logout()" class="btn btn-sm btn-outline-danger">ออกจากระบบ</button>
+      </div>
+
+      <div class="col-md-6 mb-4">
+        <div class="card p-4">
+          <h5 class="card-title mb-3">1. เลือกงานที่ต้องการตรวจ</h5>
+          <select id="assignmentSelect" class="form-select form-select-lg mb-4" onchange="updateDashboard()">
+            <option value="">-- กรุณาเลือกชิ้นงาน --</option>
+          </select>
+
+          <h5 class="card-title mb-3">2. ส่อง QR Code เพื่อตรวจทันที</h5>
+          <div class="text-center mb-3">
+            <button id="startCamBtn" onclick="startLiveScanner()" class="btn btn-success btn-lg w-100 py-3 mb-2">📷 เปิดกล้องสแกนอัตโนมัติ</button>
+            <button id="stopCamBtn" onclick="stopLiveScanner()" class="btn btn-danger w-100 mb-2 hidden">ปิดกล้อง</button>
+          </div>
+          
+          <div id="reader"></div>
+          <div id="resultMessage" class="result-box hidden"></div>
+        </div>
+      </div>
+
+      <div class="col-md-6">
+        <div class="card p-4">
+          <h5 class="card-title mb-3">Dashboard สรุปงาน</h5>
+          <div class="row text-center mb-3">
+            <div class="col-6">
+              <div class="bg-light p-3 rounded">
+                <h6>ส่งแล้ว</h6>
+                <h3 id="dashSubmitted" class="text-success">0</h3>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="bg-light p-3 rounded">
+                <h6>ยังไม่ส่ง</h6>
+                <h3 id="dashMissing" class="text-danger">0</h3>
+              </div>
+            </div>
+          </div>
+          <h6>รายชื่อนักเรียนที่ยังไม่ส่ง:</h6>
+          <ul id="missingList" class="list-group" style="max-height: 250px; overflow-y: auto;">
+            <li class="list-group-item text-muted text-center">กรุณาเลือกงานเพื่อดูรายชื่อ</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <audio id="beepAudio" src="https://assets.mixkit.co/active_storage/sfx/2568/2568-84.wav" preload="auto"></audio>
+
+  <script>
+    // 🌟 นำ URL เว็บแอปที่ก๊อปปี้มาจากขั้นตอนที่ 2 มาวางแทนที่ตรงนี้ครับ 🌟
+    const BACKEND_URL = "https://script.google.com/macros/s/AKfycbzuXvt7_gU_PS34AvWmNZ9XSKIx68Gk76yUC7WvMU_8esPHL53hXOHgLxnXcCdY5Oa-/exec";
+
+    let currentTeacherId = "";
+    let html5QrCodeLive = null;
+    let isProcessing = false;
+
+    // ฟังก์ชันช่วยยิงข้อมูลไปหา Google Apps Script หลังบ้าน
+    async function callBackend(data) {
+      const response = await fetch(BACKEND_URL, {
+        method: "POST",
+        body: JSON.stringify(data)
+      });
+      return await response.json();
+    }
+
+    function login() {
+      const user = document.getElementById('username').value;
+      const pass = document.getElementById('password').value;
+      
+      if(!user || !pass) {
+        document.getElementById('loginError').innerText = "กรุณากรอกข้อมูลให้ครบถ้วน";
+        return;
+      }
+      document.getElementById('loginError').innerText = "กำลังเข้าสู่ระบบ...";
+
+      callBackend({ action: "checkLogin", username: user, password: pass })
+        .then(response => {
+          if(response.success) {
+            currentTeacherId = response.teacherId;
+            document.getElementById('teacherNameTxt').innerText = response.teacherName;
+            document.getElementById('loginSection').classList.add('hidden');
+            document.getElementById('mainSection').classList.remove('hidden');
+            loadAssignments();
+          } else {
+            document.getElementById('loginError').innerText = response.message;
+          }
+        });
+    }
+
+    function loadAssignments() {
+      callBackend({ action: "getAssignments" }).then(assignments => {
+        const select = document.getElementById('assignmentSelect');
+        select.innerHTML = '<option value="">-- กรุณาเลือกชิ้นงาน --</option>';
+        assignments.forEach(item => {
+          let opt = document.createElement('option');
+          opt.value = item.id;
+          opt.innerText = item.name;
+          select.appendChild(opt);
+        });
+      });
+    }
+
+    function startLiveScanner() {
+      const assignmentId = document.getElementById('assignmentSelect').value;
+      if (!assignmentId) {
+        alert("กรุณาเลือกชิ้นงานก่อนเปิดกล้องครับ!");
+        return;
+      }
+
+      if (!html5QrCodeLive) {
+        html5QrCodeLive = new Html5Qrcode("reader");
+      }
+
+      document.getElementById('startCamBtn').classList.add('hidden');
+      document.getElementById('stopCamBtn').classList.remove('hidden');
+
+      html5QrCodeLive.start(
+        { facingMode: "environment" },
+        { fps: 15, qrbox: { width: 250, height: 250 } },
+        onLiveScanSuccess,
+        onLiveScanFailure
+      ).catch(err => {
+        alert("เกิดข้อผิดพลาดในการเปิดกล้อง: " + err);
+        stopLiveScanner();
+      });
+    }
+
+    function stopLiveScanner() {
+      if (html5QrCodeLive && html5QrCodeLive.isScanning) {
+        html5QrCodeLive.stop().then(() => {
+          document.getElementById('startCamBtn').classList.remove('hidden');
+          document.getElementById('stopCamBtn').classList.add('hidden');
+        });
+      }
+    }
+
+    function onLiveScanSuccess(decodedText) {
+      if (isProcessing) return;
+      isProcessing = true;
+
+      const assignmentId = document.getElementById('assignmentSelect').value;
+      document.getElementById('beepAudio').play();
+
+      callBackend({ action: "processQrScan", studentId: decodedText.trim(), assignmentId: assignmentId, teacherId: currentTeacherId })
+        .then(result => {
+          const resBox = document.getElementById('resultMessage');
+          resBox.classList.remove('hidden', 'bg-success-custom', 'bg-danger-custom');
+          document.body.classList.remove('scan-success-flash', 'scan-delay-flash');
+
+          if(result.success) {
+            resBox.className = "result-box bg-success-custom";
+            resBox.innerHTML = `✔ ${result.message}<br>เลขที่ ${result.student.number} : ${result.student.name}`;
+            document.body.classList.add('scan-success-flash');
+            updateDashboard();
+          } else {
+            resBox.className = "result-box bg-danger-custom";
+            if(result.status === 'duplicate') {
+              resBox.innerHTML = `❌ ${result.message}<br>เลขที่ ${result.student.number} : ${result.student.name} ส่งแล้ว`;
+            } else {
+              resBox.innerHTML = `❌ ${result.message}`;
+            }
+            document.body.classList.add('scan-delay-flash');
+          }
+
+          setTimeout(() => {
+            document.body.classList.remove('scan-success-flash', 'scan-delay-flash');
+            isProcessing = false;
+          }, 1500);
+        });
+    }
+
+    function onLiveScanFailure(error) {}
+
+    function updateDashboard() {
+      const assignmentId = document.getElementById('assignmentSelect').value;
+      if (!assignmentId) return;
+
+      callBackend({ action: "getDashboardData", assignmentId: assignmentId }).then(dash => {
+        document.getElementById('dashSubmitted').innerText = dash.submittedCount;
+        document.getElementById('dashMissing').innerText = dash.missingCount;
+        
+        const listUl = document.getElementById('missingList');
+        listUl.innerHTML = "";
+        
+        if(dash.missingList.length === 0) {
+          listUl.innerHTML = '<li class="list-group-item text-success text-center fw-bold">ส่งครบทุกคนแล้ว! 🎉</li>';
+        } else {
+          dash.missingList.forEach(name => {
+            let li = document.createElement('li');
+            li.className = "list-group-item text-danger";
+            li.innerText = name;
+            listUl.appendChild(li);
+          });
+        }
+      });
+    }
+
+    function logout() { window.location.reload(); }
+  </script>
+</body>
+</html>
