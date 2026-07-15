@@ -7,18 +7,16 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
   <style>
-    body { background-color: #f8f9fa; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; transition: background-color 0.15s ease; }
-    .card { border: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    body { background-color: #f0f2f5; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; transition: background-color 0.15s ease; }
+    .card { border: none; box-shadow: 0 4px 10px rgba(0,0,0,0.08); border-radius: 12px; }
     .hidden { display: none; }
     
     /* พื้นที่แสดงผลการสแกน */
     #canvas-container { width: 100%; max-width: 450px; margin: 0 auto; position: relative; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.15); background: #000; }
     #previewCanvas { width: 100%; height: auto; display: block; }
-    
-    /* ซ่อนวิดีโอต้นฉบับไว้เพื่อไม่ให้บังหน้าจอ แต่ต้องให้คงอยู่ใน DOM เพื่อผ่านระบบความปลอดภัยของเบราว์เซอร์ */
     #hiddenVideo { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
     
-    /* กรอบจำลองช่วยเล็งและเพิ่มความเร็ว */
+    /* กรอบจำลองช่วยเล็งเพิ่มความเร็ว */
     .scan-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; border: 4px solid rgba(255, 255, 255, 0.2); }
     .scan-target-box { position: absolute; top: 15%; left: 15%; width: 70%; height: 70%; border: 3px dashed #0d6efd; border-radius: 8px; box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.4); animation: pulse 1.5s infinite; }
     @keyframes pulse { 0% { border-color: #0d6efd; } 50% { border-color: #00ff66; } 100% { border-color: #0d6efd; } }
@@ -28,6 +26,9 @@
     .bg-danger-custom { background-color: #f8d7da; color: #842029; border: 3px solid #f5c2c7; }
     body.scan-success-flash { background-color: #a3cfbb !important; }
     body.scan-delay-flash { background-color: #f1aeb5 !important; }
+    
+    /* สไตล์เฉพาะปุ่มเลือกบทบาทหน้า Login */
+    .role-btn-group .btn { padding: 12px; font-size: 1.1rem; }
   </style>
 </head>
 <body>
@@ -36,38 +37,51 @@
     <div id="loginSection" class="row justify-content-center">
       <div class="col-md-5">
         <div class="card p-4 mt-5">
-          <h3 class="text-center mb-4 text-primary">QR Homework Login</h3>
+          <h3 class="text-center mb-3 text-primary fw-bold">QR Homework</h3>
+          <p class="text-center text-muted">กรุณาเลือกประเภทผู้ใช้งานเพื่อเข้าสู่ระบบ</p>
+          
+          <div class="btn-group role-btn-group w-100 mb-4" role="group">
+            <input type="radio" class="btn-check" name="roleSelect" id="roleTeacher" value="teacher" checked>
+            <label class="btn btn-outline-primary" for="roleTeacher">👨‍🏫 คุณครู</label>
+
+            <input type="radio" class="btn-check" name="roleSelect" id="roleStudent" value="student">
+            <label class="btn btn-outline-primary" for="roleStudent">🎓 นักเรียน</label>
+          </div>
+
           <div class="mb-3">
-            <label class="form-label">Username</label>
+            <label class="form-label">ชื่อผู้ใช้ (Username)</label>
             <input type="text" id="username" class="form-control" placeholder="กรอกชื่อผู้ใช้">
           </div>
           <div class="mb-3">
-            <label class="form-label">Password</label>
+            <label class="form-label">รหัสผ่าน (Password)</label>
             <input type="password" id="password" class="form-control" placeholder="กรอกรหัสผ่าน">
           </div>
-          <button onclick="login()" class="btn btn-primary w-100 py-2 mb-3">เข้าสู่ระบบ</button>
-          <button onclick="unlockAudio()" class="btn btn-sm btn-outline-secondary w-100 mb-2">🔊 เปิด/ทดสอบระบบเสียงเตือน</button>
-          <div id="loginError" class="text-danger text-center mt-3"></div>
+          <button onclick="handleLogin()" class="btn btn-primary w-100 py-2 mb-3">เข้าสู่ระบบ</button>
+          <button onclick="unlockAudio()" class="btn btn-sm btn-outline-secondary w-100 mb-2">🔊 ทดสอบระบบเสียงเตือน</button>
+          <div id="loginError" class="text-danger text-center mt-3 fw-bold"></div>
         </div>
       </div>
     </div>
 
-    <div id="mainSection" class="row justify-content-center hidden">
-      <div class="col-md-8 text-center mb-4">
-        <h4>คุณครูผู้ตรวจ: <span id="teacherNameTxt" class="text-success"></span></h4>
+    <div id="teacherSection" class="row justify-content-center hidden">
+      <div class="col-md-12 text-center mb-4">
+        <h4>คุณครูผู้ตรวจ: <span id="teacherNameTxt" class="text-success fw-bold"></span></h4>
         <button onclick="logout()" class="btn btn-sm btn-outline-danger">ออกจากระบบ</button>
       </div>
 
       <div class="col-md-6 mb-4">
-        <div class="card p-4">
-          <h5 class="card-title mb-3">1. เลือกงานที่ต้องการตรวจ</h5>
+        <div class="card p-4 mb-4">
+          <h5 class="card-title mb-3 text-primary d-flex justify-content-between align-items-center">
+            <span>1. เลือกงานที่ต้องการตรวจ</span>
+            <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#createAssignmentModal">➕ สร้างงานใหม่</button>
+          </h5>
           <select id="assignmentSelect" class="form-select form-select-lg mb-4" onchange="updateDashboard()">
             <option value="">-- กรุณาเลือกชิ้นงาน --</option>
           </select>
 
-          <h5 class="card-title mb-3">2. ส่อง QR Code เพื่อตรวจทันที</h5>
+          <h5 class="card-title mb-3 text-primary">2. ส่อง QR Code เพื่อตรวจส่งงาน</h5>
           <div class="text-center mb-3">
-            <button id="startCamBtn" onclick="startLightningScanner()" class="btn btn-success btn-lg w-100 py-3 mb-2">📷 เปิดกล้องสแกนสายฟ้าแลบ</button>
+            <button id="startCamBtn" onclick="startLightningScanner()" class="btn btn-success btn-lg w-100 py-3 mb-2">📷 เปิดกล้องสแกนความเร็วสูง</button>
             <button id="stopCamBtn" onclick="stopLightningScanner()" class="btn btn-danger w-100 mb-2 hidden">ปิดกล้อง</button>
           </div>
           
@@ -84,25 +98,120 @@
 
       <div class="col-md-6">
         <div class="card p-4">
-          <h5 class="card-title mb-3">Dashboard สรุปงาน</h5>
+          <h5 class="card-title mb-3 text-primary">Dashboard สรุปภาพรวม</h5>
           <div class="row text-center mb-3">
             <div class="col-6">
-              <div class="bg-light p-3 rounded">
-                <h6>ส่งแล้ว</h6>
-                <h3 id="dashSubmitted" class="text-success">0</h3>
+              <div class="bg-success bg-opacity-10 p-3 rounded border border-success">
+                <h6>ส่งแล้ว (คน)</h6>
+                <h3 id="dashSubmitted" class="text-success fw-bold">0</h3>
               </div>
             </div>
             <div class="col-6">
-              <div class="bg-light p-3 rounded">
-                <h6>ยังไม่ส่ง</h6>
-                <h3 id="dashMissing" class="text-danger">0</h3>
+              <div class="bg-danger bg-opacity-10 p-3 rounded border border-danger">
+                <h6>ยังไม่ส่ง (คน)</h6>
+                <h3 id="dashMissing" class="text-danger fw-bold">0</h3>
               </div>
             </div>
           </div>
-          <h6>รายชื่อนักเรียนที่ยังไม่ส่ง:</h6>
+          <h6 class="fw-bold">รายชื่อนักเรียนที่ยังไม่ส่ง:</h6>
           <ul id="missingList" class="list-group" style="max-height: 250px; overflow-y: auto;">
             <li class="list-group-item text-muted text-center">กรุณาเลือกงานเพื่อดูรายชื่อ</li>
           </ul>
+        </div>
+      </div>
+    </div>
+
+    <div id="studentSection" class="row justify-content-center hidden">
+      <div class="col-md-8 text-center mb-4">
+        <h4>ยินดีต้อนรับนักเรียน: <span id="studentNameTxt" class="text-primary fw-bold"></span></h4>
+        <button onclick="logout()" class="btn btn-sm btn-outline-danger">ออกจากระบบ</button>
+      </div>
+
+      <div class="col-md-8">
+        <div class="row mb-4">
+          <div class="col-md-6 mb-3">
+            <div class="card p-4 text-center bg-primary text-white h-100">
+              <h5>🏆 คะแนนรวมปัจจุบัน</h5>
+              <h1 id="stuTotalPoints" class="display-4 fw-bold mt-2">0</h1>
+              <p class="mb-0">คะแนนสะสมจากทุกกิจกรรม</p>
+            </div>
+          </div>
+          <div class="col-md-6 mb-3">
+            <div class="card p-4 text-center bg-warning text-dark h-100">
+              <h5>⚠️ ภารกิจค้างส่ง</h5>
+              <h1 id="stuMissingCount" class="display-4 fw-bold mt-2 text-danger">0</h1>
+              <p class="mb-0">งานที่ต้องรีบทำและนำมาส่ง</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="card p-4">
+          <h5 class="card-title mb-3 text-primary fw-bold">📝 ประวัติการส่งงานและคะแนนสะสม</h5>
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead class="table-light">
+                <tr>
+                  <th>รหัสงาน</th>
+                  <th>ชื่องาน</th>
+                  <th>กำหนดส่ง</th>
+                  <th class="text-center">คะแนนเต็ม</th>
+                  <th class="text-center">สถานะ</th>
+                </tr>
+              </thead>
+              <tbody id="studentJobsTableBody">
+                <tr>
+                  <td colspan="5" class="text-center text-muted">กำลังโหลดข้อมูล...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="createAssignmentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title text-primary fw-bold">➕ เพิ่มภารกิจงานใหม่</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label fw-bold">ชื่องาน (Assignment Name)</label>
+            <input type="text" id="newAssignName" class="form-control" placeholder="เช่น แบบฝึกหัดหน่วยที่ 1">
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">เดือนที่สั่ง (Assign Month)</label>
+            <select id="newAssignDate" class="form-select">
+              <option value="มกราคม">มกราคม</option><option value="กุมภาพันธ์">กุมภาพันธ์</option>
+              <option value="มีนาคม">มีนาคม</option><option value="เมษายน">เมษายน</option>
+              <option value="พฤษภาคม">พฤษภาคม</option><option value="มิถุนายน">มิถุนายน</option>
+              <option value="กรกฎาคม">กรกฎาคม</option><option value="สิงหาคม">สิงหาคม</option>
+              <option value="กันยายน">กันยายน</option><option value="ตุลาคม">ตุลาคม</option>
+              <option value="พฤศจิกายน">พฤศจิกายน</option><option value="ธันวาคม">ธันวาคม</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">กำหนดส่งเดือน (Due Month)</label>
+            <select id="newDueDate" class="form-select">
+              <option value="มกราคม">มกราคม</option><option value="กุมภาพันธ์">กุมภาพันธ์</option>
+              <option value="มีนาคม">มีนาคม</option><option value="เมษายน">เมษายน</option>
+              <option value="พฤษภาคม">พฤษภาคม</option><option value="มิถุนายน">มิถุนายน</option>
+              <option value="กรกฎาคม">กรกฎาคม</option><option value="สิงหาคม">สิงหาคม</option>
+              <option value="กันยายน">กันยายน</option><option value="ตุลาคม">ตุลาคม</option>
+              <option value="พฤศจิกายน">พฤศจิกายน</option><option value="ธันวาคม">ธันวาคม</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold">คะแนนเต็มประจำงาน (Points)</label>
+            <input type="number" id="newAssignPoint" class="form-control" placeholder="ใส่เฉพาะตัวเลขเท่านั้น เช่น 10" min="0">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+          <button type="button" onclick="submitNewAssignment()" class="btn btn-primary">บันทึกข้อมูลงาน</button>
         </div>
       </div>
     </div>
@@ -114,7 +223,7 @@
       if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       if (audioCtx.state === 'suspended') audioCtx.resume();
       playSuccessSound();
-      alert("ระบบเสียงตื๊ดพร้อมทำงาน!");
+      alert("ระบบเสียงสัญญาณพร้อมใช้งานแล้วครับ!");
     }
     function playSuccessSound() {
       try {
@@ -140,11 +249,13 @@
     }
   </script>
 
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
-    // URL Web App ของคุณครู
+    // URL Google Script Web App ของคุณครู
     const BACKEND_URL = "https://script.google.com/macros/s/AKfycbzuXvt7_gU_PS34AvWmNZ9XSKIx68Gk76yUC7WvMU_8esPHL53hXOHgLxnXcCdY5Oa-/exec";
 
     let currentTeacherId = "";
+    let currentStudentId = "";
     let isProcessing = false;
     let lastScannedText = "";
     
@@ -157,44 +268,135 @@
       return await response.json();
     }
 
-    function login() {
-      // เรียกขอสิทธิ์เสียงตั้งแต่ปุ่มเข้าสู่ระบบ
+    // ฟังก์ชันจัดการ Login (คัดกรองประเภทผู้ใช้งาน)
+    function handleLogin() {
       if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       if (audioCtx.state === 'suspended') audioCtx.resume();
       
       const user = document.getElementById('username').value;
       const pass = document.getElementById('password').value;
-      if(!user || !pass) { alert("กรุณากรอกข้อมูลให้ครบถ้วน"); return; }
+      if(!user || !pass) { alert("กรุณากรอกชื่อผู้ใช้และรหัสผ่านให้ครบถ้วนครับ"); return; }
       
+      const role = document.querySelector('input[name="roleSelect"]:checked').value;
       document.getElementById('loginError').innerText = "กำลังเข้าสู่ระบบ...";
-      callBackend({ action: "checkLogin", username: user, password: pass }).then(response => {
-        if(response.success) {
-          currentTeacherId = response.teacherId;
-          document.getElementById('teacherNameTxt').innerText = response.teacherName;
-          document.getElementById('loginSection').classList.add('hidden');
-          document.getElementById('mainSection').classList.remove('hidden');
-          loadAssignments();
-        } else { 
-          document.getElementById('loginError').innerText = response.message; 
-        }
-      }).catch(err => {
-        document.getElementById('loginError').innerText = "ไม่สามารถเชื่อมต่อฐานข้อมูลได้ กรุณาลองใหม่";
-        console.error(err);
-      });
+
+      if (role === "teacher") {
+        // เข้าสู่ระบบฝั่งครู
+        callBackend({ action: "checkLogin", username: user, password: pass }).then(response => {
+          if(response.success) {
+            currentTeacherId = response.teacherId;
+            document.getElementById('teacherNameTxt').innerText = response.teacherName;
+            document.getElementById('loginSection').classList.add('hidden');
+            document.getElementById('teacherSection').classList.remove('hidden');
+            loadAssignments();
+          } else { 
+            document.getElementById('loginError').innerText = response.message; 
+          }
+        }).catch(e => { document.getElementById('loginError').innerText = "เกิดข้อผิดพลาดในการเข้าสู่ระบบฝั่งครู"; });
+      } else {
+        // เข้าสู่ระบบฝั่งนักเรียน
+        callBackend({ action: "studentLogin", username: user, password: pass }).then(response => {
+          if(response.success) {
+            currentStudentId = response.studentId;
+            document.getElementById('studentNameTxt').innerText = response.studentName;
+            document.getElementById('loginSection').classList.add('hidden');
+            document.getElementById('studentSection').classList.remove('hidden');
+            loadStudentDashboard();
+          } else {
+            document.getElementById('loginError').innerText = response.message;
+          }
+        }).catch(e => { document.getElementById('loginError').innerText = "เกิดข้อผิดพลาดในการเข้าสู่ระบบฝั่งนักเรียน"; });
+      }
     }
 
+    // ดึงงานมาใส่ Dropdown (ครู)
     function loadAssignments() {
       callBackend({ action: "getAssignments" }).then(assignments => {
         const select = document.getElementById('assignmentSelect');
         select.innerHTML = '<option value="">-- กรุณาเลือกชิ้นงาน --</option>';
         assignments.forEach(item => {
-          let opt = document.createElement('option'); opt.value = item.id; opt.innerText = item.name;
+          let opt = document.createElement('option'); opt.value = item.id; opt.innerText = `[${item.id}] ${item.name}`;
           select.appendChild(opt);
         });
       });
     }
 
-    // ⚡️ เริ่มใช้งานกล้องหลัง ⚡️
+    // ส่งคำขอบันทึก Assignment ใหม่ไปยัง Google Sheet
+    function submitNewAssignment() {
+      const name = document.getElementById('newAssignName').value;
+      const assignDate = document.getElementById('newAssignDate').value;
+      const dueDate = document.getElementById('newDueDate').value;
+      const points = document.getElementById('newAssignPoint').value;
+
+      if (!name || !points) {
+        alert("กรุณากรอกข้อมูล ชื่องาน และ คะแนนเต็ม ให้ครบถ้วนครับ!");
+        return;
+      }
+
+      // ปิด modal สื่อสารกับหลังบ้าน
+      const modalElement = document.getElementById('createAssignmentModal');
+      const modal = bootstrap.Modal.getInstance(modalElement);
+      
+      callBackend({
+        action: "createAssignment",
+        name: name,
+        assignDate: assignDate,
+        dueDate: dueDate,
+        points: points,
+        teacherId: currentTeacherId
+      }).then(res => {
+        if(res.success) {
+          alert(res.message);
+          modal.hide();
+          // ล้างฟอร์ม
+          document.getElementById('newAssignName').value = "";
+          document.getElementById('newAssignPoint').value = "";
+          // โหลด dropdown งานใหม่
+          loadAssignments();
+        } else {
+          alert("ล้มเหลว: " + res.message);
+        }
+      });
+    }
+
+    // ดึงข้อมูลภาพรวมการเช็กงานและคะแนนของนักเรียน (นักเรียน)
+    function loadStudentDashboard() {
+      const tableBody = document.getElementById('studentJobsTableBody');
+      tableBody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">กำลังดึงข้อมูลคะแนน...</td></tr>`;
+
+      callBackend({ action: "getStudentDashboard", studentId: currentStudentId }).then(data => {
+        if (data.success) {
+          document.getElementById('stuTotalPoints').innerText = data.totalPoints;
+          document.getElementById('stuMissingCount').innerText = data.missingJobsCount;
+          
+          tableBody.innerHTML = "";
+          if(data.allJobs.length === 0) {
+            tableBody.innerHTML = `<tr><td colspan="5" class="text-center text-success fw-bold">ยินดีด้วย! ยังไม่มีงานใดๆ ที่ถูกสั่งในขณะนี้ 🎉</td></tr>`;
+            return;
+          }
+
+          data.allJobs.forEach(job => {
+            const tr = document.createElement('tr');
+            
+            // แสดงสถานะ สีเขียว=ส่งแล้ว / สีแดง=ยังไม่ส่ง
+            const statusBadge = job.status === "ส่งแล้ว" 
+              ? `<span class="badge bg-success">✔ ส่งแล้ว</span>`
+              : `<span class="badge bg-danger">❌ ยังไม่ส่ง</span>`;
+
+            tr.innerHTML = `
+              <td><strong>${job.id}</strong></td>
+              <td>${job.name} <small class="text-muted d-block">สั่ง: ${job.assignDate}</small></td>
+              <td><span class="text-secondary">${job.dueDate}</span></td>
+              <td class="text-center fw-bold text-primary">${job.maxPoints} คะแนน</td>
+              <td class="text-center">${statusBadge}</td>
+            `;
+            tableBody.appendChild(tr);
+          });
+        }
+      });
+    }
+
+    // ⚡️ เริ่มการทำงานของสแกนเนอร์ความเร็วสูง ⚡️
     function startLightningScanner() {
       const assignmentId = document.getElementById('assignmentSelect').value;
       if (!assignmentId) { alert("กรุณาเลือกชิ้นงานก่อนตรวจครับ!"); return; }
@@ -207,7 +409,6 @@
       document.getElementById('stopCamBtn').classList.remove('hidden');
       document.getElementById('canvas-container').classList.remove('hidden');
 
-      // เรียกใช้งานกล้องผ่านระบบมาตรฐานเบราว์เซอร์
       navigator.mediaDevices.getUserMedia({
         video: { 
           facingMode: "environment",
@@ -219,15 +420,13 @@
         videoStream = stream;
         videoElement.srcObject = stream;
         videoElement.play();
-        // รันการคำนวณเฟรมภาพ
         animationFrameId = requestAnimationFrame(tickScan);
       }).catch(function(err) {
-        alert("ไม่สามารถเข้าถึงกล้องหลังหลักของเครื่องได้: " + err);
+        alert("ไม่สามารถเข้าถึงกล้องหลังได้: " + err);
         stopLightningScanner();
       });
     }
 
-    // ฟังก์ชันคำนวณถอดรหัสพิกเซลความเร็วสูงเฉพาะในกรอบสี่เหลี่ยมตรงกลาง
     function tickScan() {
       if (videoElement && videoElement.readyState === videoElement.HAVE_ENOUGH_DATA) {
         const vWidth = videoElement.videoWidth;
@@ -236,10 +435,8 @@
         canvasElement.width = vWidth;
         canvasElement.height = vHeight;
         
-        // วาดภาพสดจากกล้องลงบนหน้าแคนวาส
         canvasCtx.drawImage(videoElement, 0, 0, vWidth, vHeight);
         
-        // ตีกรอบเฉพาะตรงกลางจอ 70% เพื่อส่งไปถอดรหัส (ลดแรงประมวลผล CPU มือถือ)
         const roiX = Math.floor(vWidth * 0.15);
         const roiY = Math.floor(vHeight * 0.15);
         const roiWidth = Math.floor(vWidth * 0.7);
@@ -303,13 +500,11 @@
             document.body.classList.add('scan-delay-flash');
           }
 
-          // หน่วงเวลาสแกนคนถัดไปเพียง 0.3 วินาที (300ms) สแกนเร็วต่อเนื่อง
           setTimeout(() => {
             document.body.classList.remove('scan-success-flash', 'scan-delay-flash');
             isProcessing = false;
           }, 300);
 
-          // ล้างประวัติเพื่อกันการบล็อกสแกนคนเดิมซ้ำเมื่อผ่านไป 2 วินาที
           setTimeout(() => { if(lastScannedText === cleanStudentId) lastScannedText = ""; }, 2000);
         });
     }
