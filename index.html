@@ -158,9 +158,22 @@
       document.getElementById('startCamBtn').classList.add('hidden');
       document.getElementById('stopCamBtn').classList.remove('hidden');
 
+      // 🌟 จูนการตั้งค่ากล้องใหม่ เพื่อการสแกนความเร็วสูงพิเศษ 🌟
       html5QrCodeLive.start(
         { facingMode: "environment" },
-        { fps: 15, qrbox: { width: 250, height: 250 } },
+        { 
+          fps: 24, // เพิ่มความถี่ในการดึงภาพจับสัญญาณให้ถถี่ขึ้น (วิดีโอลื่นไหลขึ้น)
+          qrbox: function(viewfinderWidth, viewfinderHeight) {
+            // ขยายกรอบรับข้อมูลเป็น 70% ของหน้าจอ เพื่อให้สแกนระยะไกลและถือสแกนผ่านๆ ได้ทันที
+            var minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+            var edgeSize = Math.floor(minEdge * 0.7);
+            return { width: edgeSize, height: edgeSize };
+          },
+          aspectRatio: 1.0,
+          experimentalFeatures: {
+            useBarCodeDetectorIfSupported: true // 🔥 ไม้ตาย: ดึงพลังจากชิปฮาร์ดแวร์มือถือมาสแกนไวระดับมิลลิวินาที
+          }
+        },
         onLiveScanSuccess,
         onLiveScanFailure
       ).catch(err => {
@@ -208,10 +221,11 @@
             document.body.classList.add('scan-delay-flash');
           }
 
+          // ปรับความเร็วในการเปิดรับสแกนคิวอาร์อันถัดไปให้ไวขึ้นเป็น 1.2 วินาที
           setTimeout(() => {
             document.body.classList.remove('scan-success-flash', 'scan-delay-flash');
             isProcessing = false;
-          }, 1500);
+          }, 1200);
         });
     }
 
