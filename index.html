@@ -94,7 +94,6 @@
   <script>
     let audioCtx = null;
 
-    // ฟังก์ชันปลดล็อกระบบเสียงสำหรับอุปกรณ์ iOS/Android
     function unlockAudio() {
       if (!audioCtx) {
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -102,7 +101,6 @@
       if (audioCtx.state === 'suspended') {
         audioCtx.resume();
       }
-      // เล่นเสียงสั้นๆ ทดสอบความพร้อม
       playSuccessSound();
       alert("เปิดใช้ระบบเสียงเตือนเรียบร้อยแล้วครับ!");
     }
@@ -117,16 +115,16 @@
         gain.connect(audioCtx.destination);
         
         osc.type = "sine";
-        osc.frequency.setValueAtTime(1050, audioCtx.currentTime); // โทนเสียงแหลมใส
-        gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+        osc.frequency.setValueAtTime(1100, audioCtx.currentTime); // สูงขึ้นเล็กน้อย ชัดขึ้น
+        gain.gain.setValueAtTime(0.18, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.12);
         
         osc.start();
-        osc.stop(audioCtx.currentTime + 0.15);
+        osc.stop(audioCtx.currentTime + 0.12);
       } catch (e) { console.log(e); }
     }
 
-    // เสียงวืดดดดโทนต่ำ (ล้มเหลว/ส่งซ้ำ)
+    // เสียงบี๊บเตือนความล้มเหลว/ส่งซ้ำ (วืดดดดโทนต่ำ)
     function playErrorSound() {
       try {
         if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -135,25 +133,25 @@
         osc.connect(gain);
         gain.connect(audioCtx.destination);
         
-        osc.type = "sawtooth"; // คลื่นเสียงหยาบเพื่อเตือน
-        osc.frequency.setValueAtTime(220, audioCtx.currentTime); // โทนเสียงต่ำ
-        gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.35);
+        osc.type = "triangle";
+        osc.frequency.setValueAtTime(180, audioCtx.currentTime); 
+        gain.gain.setValueAtTime(0.25, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
         
         osc.start();
-        osc.stop(audioCtx.currentTime + 0.35);
+        osc.stop(audioCtx.currentTime + 0.3);
       } catch (e) { console.log(e); }
     }
   </script>
 
   <script>
-    // ⚠️ นำ URL Web App จาก Google Script (ลงท้ายด้วย /exec) มาใส่แทนข้อความด้านล่างนี้ ⚠️
+    // ⚠️ นำ URL Web App จาก Google Script มาใส่แทนข้อความด้านล่างนี้ ⚠️
     const BACKEND_URL = "https://script.google.com/macros/s/AKfycbzuXvt7_gU_PS34AvWmNZ9XSKIx68Gk76yUC7WvMU_8esPHL53hXOHgLxnXcCdY5Oa-/exec";
 
     let currentTeacherId = "";
     let html5QrCodeLive = null;
     let isProcessing = false;
-    let lastScannedText = ""; // ตัวกรองป้องกันการอ่านค่ารหัสเดิมซ้ำซ้อนทันที
+    let lastScannedText = "";
 
     async function callBackend(data) {
       const response = await fetch(BACKEND_URL, {
@@ -164,7 +162,6 @@
     }
 
     function login() {
-      // เปิดใช้เสียงโดยอัตโนมัติเมื่อกดล็อกอิน
       if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       if (audioCtx.state === 'suspended') audioCtx.resume();
 
@@ -218,31 +215,35 @@
       document.getElementById('startCamBtn').classList.add('hidden');
       document.getElementById('stopCamBtn').classList.remove('hidden');
 
-      // ⚡️ เพิ่มประสิทธิภาพความละเอียดและการเร่งประสิทธิกล้องให้สูงสุด ⚡️
+      // ⚡️ จูนโครงสร้างกล้องความเร็วสูงพิเศษระดับสายฟ้าแลบ ⚡️
       html5QrCodeLive.start(
-        { facingMode: "environment" },
+        { facingMode: { exact: "environment" } }, // 🔥 บังคับเปิดเฉพาะกล้องหลังของมือถือเท่านั้น! 
         { 
-          fps: 40, // เร่งความถี่เฟรมให้ลื่นและเร็วขึ้นอีกเกือบสองเท่า
+          fps: 60, // เร่งเฟรมเรทกล้องขึ้นไปสูงสุดที่ 60 FPS เพื่อตรวจจับทันทีเมื่อลากผ่าน
           qrbox: function(viewfinderWidth, viewfinderHeight) {
-            // ดึงขอบสแกน 80% ปรับมุมตรวจจับให้ใหญ่เต็มเฟรมภาพ
+            // ปรับพื้นที่สแกนให้กว้างถึง 85% ของจอ เพื่อให้ลากผ่านไกลๆ ก็ติดได้เลย
             var minEdge = Math.min(viewfinderWidth, viewfinderHeight);
-            var edgeSize = Math.floor(minEdge * 0.8);
+            var edgeSize = Math.floor(minEdge * 0.85);
             return { width: edgeSize, height: edgeSize };
           },
-          videoConstraints: {
-            width: { ideal: 640 }, // ลดความละเอียดลงเล็กน้อยเป็น VGA เพื่อเพิ่มการทำงานระดับสายฟ้าแลบ
-            height: { ideal: 480 },
-            focusMode: "continuous" // สั่งให้กล้อง Focus ตลอดเวลาโดยไม่ต้องจับภาพค้างนิ่งๆ
-          },
           experimentalFeatures: {
-            useBarCodeDetectorIfSupported: true // ดึง API การตรวจจับจากฮาร์ดแวร์โดยตรง
+            useBarCodeDetectorIfSupported: true // ดึงการเร่งการสแกนผ่านชิปประมวลผลตัวเครื่องโดยตรง
           }
         },
         onLiveScanSuccess,
         onLiveScanFailure
       ).catch(err => {
-        alert("เกิดข้อผิดพลาดในการเปิดกล้อง: " + err);
-        stopLiveScanner();
+        // หากมือถือหรืออุปกรณ์บางตัวไม่เข้าใจตัวแปรกึ่งบังคับ 'exact' ให้รันสแตนดาร์ดกล้องหลังสำรองทันที
+        console.warn("พยายามเปิดกล้องหลังแบบเจาะจงไม่สำเร็จ จะสลับไปใช้โหมดทั่วไป...");
+        html5QrCodeLive.start(
+          { facingMode: "environment" },
+          { fps: 60, qrbox: { width: 280, height: 280 } },
+          onLiveScanSuccess,
+          onLiveScanFailure
+        ).catch(err2 => {
+          alert("ไม่สามารถเข้าถึงกล้องหลังของคุณครูได้: " + err2);
+          stopLiveScanner();
+        });
       });
     }
 
@@ -258,7 +259,7 @@
     function onLiveScanSuccess(decodedText) {
       const cleanStudentId = String(decodedText).trim();
 
-      // ป้องกันการแสกนซ้ำตัวเดิมซ้อนๆ กันในระยะ 1 วินาที
+      // ป้องกันการแสกนซ้ำซ้อนภายในระยะ 1.5 วินาทีแรก
       if (isProcessing || cleanStudentId === lastScannedText) return;
       isProcessing = true;
       lastScannedText = cleanStudentId;
@@ -272,13 +273,13 @@
           document.body.classList.remove('scan-success-flash', 'scan-delay-flash');
 
           if(result.success) {
-            playSuccessSound(); // 🔊 ตื๊ดใสๆ (สำเร็จ)
+            playSuccessSound(); // 🔊 เสียงบี๊บตื๊ดใสสำเร็จ!
             resBox.className = "result-box bg-success-custom";
             resBox.innerHTML = `✔ ${result.message}<br>เลขที่ ${result.student.number} : ${result.student.name}`;
             document.body.classList.add('scan-success-flash');
             updateDashboard();
           } else {
-            playErrorSound(); // 🔊 วืดดดดต่ำ (ล้มเหลว/ส่งซ้ำ)
+            playErrorSound(); // 🔊 เสียงตื๊ดโทนต่ำเตือนส่งซ้ำ/สแกนไม่ผ่าน!
             resBox.className = "result-box bg-danger-custom";
             if(result.status === 'duplicate') {
               resBox.innerHTML = `❌ ${result.message}<br>เลขที่ ${result.student.number} : ${result.student.name} ส่งแล้ว`;
@@ -288,21 +289,23 @@
             document.body.classList.add('scan-delay-flash');
           }
 
-          // ปล่อยให้พร้อมสแกนคิวอาร์อันถัดไปทันทีใน 1 วินาที
+          // คืนสถานะให้รับการสแกนใบถัดไปได้ทันทีภายใน 1 วินาที
           setTimeout(() => {
             document.body.classList.remove('scan-success-flash', 'scan-delay-flash');
             isProcessing = false;
           }, 1000);
 
-          // ลบหน่วยความจำการอ่านซ้ำหลังผ่านไป 2 วินาที (เพื่อให้สแกนนักเรียนคนเดิมซ้ำได้เผื่อกรณีจำเป็น)
+          // ล้างหน่วยความจำรหัสเดิมเพื่อกันการล็อคสแกนรหัสซ้ำเดิมเกิน 2.5 วินาที
           setTimeout(() => {
             if(lastScannedText === cleanStudentId) {
               lastScannedText = "";
             }
-          }, 2000);
+          }, 2500);
         });
     }
 
+    // เมื่อมีข้อผิดพลาดระหว่างสแกน (เช่น กล้องสั่นไหว สแกนภาพเบลอจับรหัสไม่ได้ในเสี้ยววินาทีนั้น)
+    // ส่งเสียงและเอฟเฟกต์การสแกนไม่ผ่านเบาๆ โดยไม่ปิดกล้อง
     function onLiveScanFailure(error) {}
 
     function updateDashboard() {
