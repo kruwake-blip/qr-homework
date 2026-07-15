@@ -92,7 +92,7 @@
   <audio id="beepAudio" src="https://assets.mixkit.co/active_storage/sfx/2568/2568-84.wav" preload="auto"></audio>
 
   <script>
-    // ⚠️ อย่าลืมนำ URL Web App ที่ได้จาก Google Script (ลงท้ายด้วย /exec) มาใส่ในเครื่องหมายคำพูดด้านล่างนี้ครับ ⚠️
+    // ⚠️ นำ URL Web App จาก Google Script (ลงท้ายด้วย /exec) มาใส่แทนข้อความด้านล่างนี้ ⚠️
     const BACKEND_URL = "https://script.google.com/macros/s/AKfycbzuXvt7_gU_PS34AvWmNZ9XSKIx68Gk76yUC7WvMU_8esPHL53hXOHgLxnXcCdY5Oa-/exec";
 
     let currentTeacherId = "";
@@ -185,8 +185,8 @@
       const assignmentId = document.getElementById('assignmentSelect').value;
       document.getElementById('beepAudio').play();
 
-      // ล้างเว้นวรรคและอักขระพิเศษออกจาก Text ที่สแกนได้ก่อนส่งข้ามระบบ
-      const cleanStudentId = String(decodedText).replace(/[\r\n\t\s]/g, '').trim();
+      // บังคับแปลงเป็น String และล้างช่องว่าง ก่อนส่งไปทำงาน
+      const cleanStudentId = String(decodedText).trim();
 
       callBackend({ action: "processQrScan", studentId: cleanStudentId, assignmentId: assignmentId, teacherId: currentTeacherId })
         .then(result => {
@@ -218,7 +218,6 @@
 
     function onLiveScanFailure(error) {}
 
-    // ฟังก์ชันดึงค่า Dashboard มาแสดงผลจริง
     function updateDashboard() {
       const assignmentId = document.getElementById('assignmentSelect').value;
       if (!assignmentId) return;
