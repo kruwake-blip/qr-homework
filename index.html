@@ -174,7 +174,7 @@
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title text-primary fw-bold">➕ เพิ่มภารกิจงานใหม่</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          <button type="button" class="btn-close" data-bs-toggle="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
           <div class="mb-3">
@@ -267,20 +267,19 @@
       return await response.json();
     }
 
-    // ฟังก์ชันจัดการ Login (คัดกรองประเภทผู้ใช้งาน)
+    // ฟังก์ชันจัดการ Login (แก้ไขจับคู่คีย์เวิร์ดให้ตรงกับตัวแปรของแผ่นงานหลังบ้าน)
     function handleLogin() {
       if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       if (audioCtx.state === 'suspended') audioCtx.resume();
       
-      const user = document.getElementById('username').value;
-      const pass = document.getElementById('password').value;
+      const user = document.getElementById('username').value.trim();
+      const pass = document.getElementById('password').value.trim();
       if(!user || !pass) { alert("กรุณากรอกชื่อผู้ใช้และรหัสผ่านให้ครบถ้วนครับ"); return; }
       
       const role = document.querySelector('input[name="roleSelect"]:checked').value;
       document.getElementById('loginError').innerText = "กำลังเข้าสู่ระบบ...";
 
       if (role === "teacher") {
-        // เข้าสู่ระบบฝั่งครู
         callBackend({ action: "checkLogin", username: user, password: pass }).then(response => {
           if(response.success) {
             currentTeacherId = response.teacherId;
@@ -291,9 +290,8 @@
           } else { 
             document.getElementById('loginError').innerText = response.message; 
           }
-        }).catch(e => { document.getElementById('loginError').innerText = "เกิดข้อผิดพลาดในการเข้าสู่ระบบฝั่งครู"; });
+        }).catch(e => { document.getElementById('loginError').innerText = "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์ครู"; });
       } else {
-        // เข้าสู่ระบบฝั่งนักเรียน
         callBackend({ action: "studentLogin", username: user, password: pass }).then(response => {
           if(response.success) {
             currentStudentId = response.studentId;
@@ -304,7 +302,7 @@
           } else {
             document.getElementById('loginError').innerText = response.message;
           }
-        }).catch(e => { document.getElementById('loginError').innerText = "เกิดข้อผิดพลาดในการเข้าสู่ระบบฝั่งนักเรียน"; });
+        }).catch(e => { document.getElementById('loginError').innerText = "เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์นักเรียน"; });
       }
     }
 
@@ -332,11 +330,195 @@
         return;
       }
 
-      // ปิด modal สื่อสารกับหลังบ้าน
       const modalElement = document.getElementById('createAssignmentModal');
       const modal = bootstrap.Modal.getInstance(modalElement);
       
       callBackend({
         action: "createAssignment",
         name: name,
-        assign
+        assignDate: assignDate,
+        dueDate: dueDate,
+        points: points,
+        teacherId: currentTeacherId
+      }).then(res => {
+        if(res.success) {
+          alert(res.message);
+          modal.hide();
+          document.getElementById('newAssignName').value = "";
+          document.getElementById('newAssignPoint').value = "";
+          loadAssignments();
+        } else {
+          alert("ล้มเหลว: " + res.message);
+        }
+      });
+    }
+
+    // ดึงข้อมูลภาพรวมการเช็กงานของนักเรียน (ไม่แสดงคะแนน)
+    function loadStudentDashboard() {
+      const tableBody = document.getElementById('studentJobsTableBody');
+      tableBody.innerHTML = `<tr><td colspan="4" class="text-center text-muted">กำลังดึงข้อมูล...</td></tr>`;
+
+      callBackend({ action: "getStudentDashboard", studentId: currentStudentId }).then(data => {
+        if (data.success) {
+          document.getElementById('stuSubmittedCount').innerText = data.submittedCount;
+          document.getElementById('stuMissingCount').innerText = data.missingJobsCount;
+          
+          tableBody.innerHTML = "";
+          if(data.allJobs.length === 0) {
+            tableBody.innerHTML = `<tr><td colspan="4" class="text-center text-success fw-bold">ยังไม่มีข้อมูลภารกิจงานในระบบขณะนี้ 🎉</td></tr>`;
+            return;
+          }
+
+          data.allJobs.forEach(job => {
+            const tr = document.createElement('tr');
+            const statusBadge = job.status === "ส่งแล้ว" 
+              ? `<span class="badge bg-success">✔ ส่งแล้ว</span>`
+              : `<span class="badge bg-danger">❌ ยังไม่ส่ง</span>`;
+
+            tr.innerHTML = `
+              <td><strong>${job.id}</strong></td>
+              <td>${job.name} <small class="text-muted d-block">สั่ง: ${job.assignDate}</small></td>
+              <td><span class="text-secondary">${job.dueDate}</span></td>
+              <td class="text-center">${statusBadge}</td>
+            `;
+            tableBody.appendChild(tr);
+          });
+        }
+      });
+    }
+
+    // เริ่มการทำงานของสแกนเนอร์ความเร็วสูง
+    function startLightningScanner() {
+      const assignmentId = document.getElementById('assignmentSelect').value;
+      if (!assignmentId) { alert("กรุณาเลือกชิ้นงานก่อนตรวจครับ!"); return; }
+
+      videoElement = document.getElementById("hiddenVideo");
+      canvasElement = document.getElementById("previewCanvas");
+      canvasCtx = canvasElement.getContext("2d", { willReadFrequently: true });
+
+      document.getElementById('startCamBtn').classList.add('hidden');
+      document.getElementById('stopCamBtn').classList.remove('hidden');
+      document.getElementById('canvas-container').classList.remove('hidden');
+
+      navigator.mediaDevices.getUserMedia({
+        video: { 
+          facingMode: "environment",
+          width: { ideal: 640 }, 
+          height: { ideal: 480 },
+          frameRate: { ideal: 60 }
+        }
+      }).then(function(stream) {
+        videoStream = stream;
+        videoElement.srcObject = stream;
+        videoElement.play();
+        animationFrameId = requestAnimationFrame(tickScan);
+      }).catch(function(err) {
+        alert("ไม่สามารถเข้าถึงกล้องหลังได้: " + err);
+        stopLightningScanner();
+      });
+    }
+
+    function tickScan() {
+      if (videoElement && videoElement.readyState === videoElement.HAVE_ENOUGH_DATA) {
+        const vWidth = videoElement.videoWidth;
+        const vHeight = videoElement.videoHeight;
+        
+        canvasElement.width = vWidth;
+        canvasElement.height = vHeight;
+        
+        canvasCtx.drawImage(videoElement, 0, 0, vWidth, vHeight);
+        
+        const roiX = Math.floor(vWidth * 0.15);
+        const roiY = Math.floor(vHeight * 0.15);
+        const roiWidth = Math.floor(vWidth * 0.7);
+        const roiHeight = Math.floor(vHeight * 0.7);
+        
+        const imageData = canvasCtx.getImageData(roiX, roiY, roiWidth, roiHeight);
+        
+        const code = jsQR(imageData.data, imageData.width, imageData.height, {
+          inversionAttempts: "dontInvert"
+        });
+
+        if (code && code.data) {
+          onScanMatched(code.data);
+        }
+      }
+      if (videoStream) {
+        animationFrameId = requestAnimationFrame(tickScan);
+      }
+    }
+
+    function stopLightningScanner() {
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
+      if (videoStream) {
+        videoStream.getTracks().forEach(track => track.stop());
+        videoStream = null;
+      }
+      document.getElementById('startCamBtn').classList.remove('hidden');
+      document.getElementById('stopCamBtn').classList.add('hidden');
+      document.getElementById('canvas-container').classList.add('hidden');
+    }
+
+    function onScanMatched(decodedText) {
+      const cleanStudentId = String(decodedText).trim();
+
+      if (isProcessing || cleanStudentId === lastScannedText) return;
+      isProcessing = true;
+      lastScannedText = cleanStudentId;
+
+      const assignmentId = document.getElementById('assignmentSelect').value;
+
+      callBackend({ action: "processQrScan", studentId: cleanStudentId, assignmentId: assignmentId, teacherId: currentTeacherId })
+        .then(result => {
+          const resBox = document.getElementById('resultMessage');
+          resBox.classList.remove('hidden', 'bg-success-custom', 'bg-danger-custom');
+          document.body.classList.remove('scan-success-flash', 'scan-delay-flash');
+
+          if(result.success) {
+            playSuccessSound();
+            resBox.className = "result-box bg-success-custom";
+            resBox.innerHTML = `✔ ${result.message}<br>เลขที่ ${result.student.number} : ${result.student.name}`;
+            document.body.classList.add('scan-success-flash');
+            updateDashboard();
+          } else {
+            playErrorSound();
+            resBox.className = "result-box bg-danger-custom";
+            if(result.status === 'duplicate') {
+              resBox.innerHTML = `❌ ${result.message}<br>เลขที่ ${result.student.number} : ${result.student.name} ส่งแล้ว`;
+            } else {
+              resBox.innerHTML = `❌ ${result.message}`;
+            }
+            document.body.classList.add('scan-delay-flash');
+          }
+
+          setTimeout(() => {
+            document.body.classList.remove('scan-success-flash', 'scan-delay-flash');
+            isProcessing = false;
+          }, 300);
+
+          setTimeout(() => { if(lastScannedText === cleanStudentId) lastScannedText = ""; }, 2000);
+        });
+    }
+
+    function updateDashboard() {
+      const assignmentId = document.getElementById('assignmentSelect').value;
+      if (!assignmentId) return;
+      callBackend({ action: "getDashboardData", assignmentId: assignmentId }).then(dash => {
+        document.getElementById('dashSubmitted').innerText = dash.submittedCount;
+        document.getElementById('dashMissing').innerText = dash.missingCount;
+        const listUl = document.getElementById('missingList'); listUl.innerHTML = "";
+        if(dash.missingList.length === 0) {
+          listUl.innerHTML = '<li class="list-group-item text-success text-center fw-bold">ส่งครบทุกคนแล้ว! 🎉</li>';
+        } else {
+          dash.missingList.forEach(name => {
+            let li = document.createElement('li'); li.className = "list-group-item text-danger"; li.innerText = name;
+            listUl.appendChild(li);
+          });
+        }
+      });
+    }
+
+    function logout() { window.location.reload(); }
+  </script>
+</body>
+</html>
