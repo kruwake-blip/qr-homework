@@ -162,7 +162,7 @@
       margin-bottom: 6px; 
       z-index: 5;
     }
-    .card-image-screen img { width: 100%; height: 100%; object-fit: cover; }
+    .card-image-screen img { width: 100%; height: 100%; object-fit: cover; background-color: #fff; }
     .card-detail-box { flex-grow: 1; background: #fffde7; border: 2px dashed #bcaaa4; border-radius: 6px; padding: 6px; font-size: 0.72rem; color: #5d4037; line-height: 1.3; overflow-y: auto; z-index: 5; }
 
     /* ----------------------------------------------------------------------
@@ -479,35 +479,22 @@
     const rarityNames = ["Common", "Rare", "Super Rare", "Super Super Rare", "Secret", "Legendary"];
     const rarityBorderColors = ["#6c757d", "#0d6efd", "#fd7e14", "#dc3545", "#d63384", "#ffffff"];
 
-    // ฟังก์ชันเสริมสำหรับแปลงลิงก์เปิดเว็บของ Google Drive ให้กลายเป็น Direct Image URL เสมอ เพื่อแก้ปัญหารูปไม่แสดงผล
+    // ฟังก์ชันระดับสูง: ใช้ Regular Expression (RegEx) เพื่อดึง ID ของ Google Drive ออกมาให้ได้ 100%
     function formatDriveImageUrl(url) {
       if (!url) return 'https://via.placeholder.com/300x300?text=No+Image';
-      let stringUrl = String(url).trim();
       
-      // ตรวจสอบว่าเป็นลิงก์แชร์จาก Google Drive หรือไม่
-      if (stringUrl.includes("drive.google.com")) {
-        let fileId = "";
+      // แปลงเป็น String และตัดช่องว่างหัวท้ายออกก่อน เผื่อคุณครูเผลอกดเคาะเว้นวรรคในเซลล์
+      let cleanUrl = String(url).trim();
+      
+      if (cleanUrl.includes("drive.google.com")) {
+        // ใช้ RegEx ดึงรหัส ID ความยาว 33-44 ตัวอักษรที่มักจะอยู่ตามหลัง /d/ หรือ id=
+        const match = cleanUrl.match(/(?:https?:\/\/)?(?:drive\.google\.com\/)(?:(?:file\/d\/)|(?:open\?id=)|(?:uc\?id=))([a-zA-Z0-9_-]{33,44})/);
         
-        // แบบที่ 1: /file/d/[FILE_ID]/view
-        if (stringUrl.includes("/file/d/")) {
-          let parts = stringUrl.split("/file/d/");
-          if (parts[1]) {
-            fileId = parts[1].split("/")[0].split("?")[0];
-          }
-        } 
-        // แบบที่ 2: ?id=[FILE_ID]
-        else if (stringUrl.includes("id=")) {
-          let parts = stringUrl.split("id=");
-          if (parts[1]) {
-            fileId = parts[1].split("&")[0];
-          }
-        }
-        
-        if (fileId) {
-          return `https://docs.google.com/uc?export=download&id=${fileId}`;
+        if (match && match[1]) {
+          return `https://docs.google.com/uc?export=download&id=${match[1]}`;
         }
       }
-      return stringUrl;
+      return cleanUrl;
     }
 
     function toggleSidebar() {
@@ -699,7 +686,7 @@
         }
       }
       
-      // เรียกใช้ฟังก์ชันแปลงลิงก์ Google Drive ในแท็ก img src ด้านล่างนี้
+      // แปลง URL รูปภาพผ่าน RegEx ตัวใหม่ที่แก้ไขให้มีความเสถียรสูงสุด
       let secureCardImg = formatDriveImageUrl(card.picture);
       
       let cardHtml = `
