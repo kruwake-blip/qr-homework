@@ -3,20 +3,33 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ระบบเช็กการส่งงาน QR Homework</title>
+  <title>ระบบ QR Homework</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-    body { background-color: #f0f2f5; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; transition: background-color 0.15s ease; }
+    body { background-color: #f0f2f5; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; transition: background-color 0.15s ease; padding-top: 56px; }
     .card { border: none; box-shadow: 0 4px 10px rgba(0,0,0,0.08); border-radius: 12px; }
-    .hidden { display: none; }
+    .hidden { display: none !important; }
     
-    /* พื้นที่แสดงผลการสแกน */
+    /* แถบหัวขอด้านบน (Top Bar) */
+    .top-navbar { position: fixed; top: 0; left: 0; right: 0; height: 56px; background-color: #ffffff; box-shadow: 0 2px 4px rgba(0,0,0,0.05); z-index: 1030; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; }
+    .top-navbar .brand-title { font-weight: bold; color: #0d6efd; font-size: 1.25rem; }
+    .top-navbar .user-status { font-weight: 600; color: #495057; }
+
+    /* ระบบเมนูด้านซ้าย (Sidebar) แบบสไลด์ซ่อน-แสดง */
+    .sidebar { position: fixed; top: 56px; bottom: 0; left: -260px; width: 260px; background-color: #1e293b; color: #ffffff; transition: left 0.3s ease; z-index: 1040; box-shadow: 4px 0 10px rgba(0,0,0,0.1); padding-top: 10px; }
+    .sidebar.active { left: 0; }
+    .sidebar-overlay { position: fixed; top: 56px; bottom: 0; left: 0; right: 0; background-color: rgba(0,0,0,0.4); z-index: 1035; display: none; }
+    .sidebar-overlay.active { display: block; }
+    .sidebar .menu-item { display: flex; align-items: center; padding: 12px 20px; color: #cbd5e1; text-decoration: none; transition: all 0.2s ease; border-left: 4px solid transparent; cursor: pointer; }
+    .sidebar .menu-item:hover { background-color: #334155; color: #ffffff; border-left-color: #38bdf8; }
+    .sidebar .menu-item i { width: 25px; font-size: 1.1rem; margin-right: 10px; }
+    
+    /* พื้นที่แสดงผลกล้องและเป้าเล็ง */
     #canvas-container { width: 100%; max-width: 450px; margin: 0 auto; position: relative; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.15); background: #000; }
     #previewCanvas { width: 100%; height: auto; display: block; }
     #hiddenVideo { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
-    
-    /* กรอบจำลองช่วยเล็งเพิ่มความเร็ว */
     .scan-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; border: 4px solid rgba(255, 255, 255, 0.2); }
     .scan-target-box { position: absolute; top: 15%; left: 15%; width: 70%; height: 70%; border: 3px dashed #0d6efd; border-radius: 8px; box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.4); animation: pulse 1.5s infinite; }
     @keyframes pulse { 0% { border-color: #0d6efd; } 50% { border-color: #00ff66; } 100% { border-color: #0d6efd; } }
@@ -27,28 +40,45 @@
     body.scan-success-flash { background-color: #a3cfbb !important; }
     body.scan-delay-flash { background-color: #f1aeb5 !important; }
     
-    /* สไตล์เฉพาะปุ่มเลือกบทบาทหน้า Login */
-    .role-btn-group .btn { padding: 12px; font-size: 1.1rem; }
-
-    /* ปุ่มเครื่องคิดเลขสำหรับคีย์ตัวเลขคะแนน */
     .calc-btn { height: 55px; font-size: 1.4rem; font-weight: bold; }
   </style>
 </head>
 <body>
 
+  <div id="topNavbar" class="top-navbar hidden">
+    <button class="btn btn-outline-secondary border-0" onclick="toggleSidebar()">
+      <i class="fa-solid fa-bars fa-lg"></i>
+    </button>
+    <div class="brand-title">ระบบ QR Homework</div>
+    <div id="userStatusTxt" class="user-status">ครู: กำลังโหลด...</div>
+  </div>
+
+  <div id="sidebarOverlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
+  <div id="sidebarMenu" class="sidebar">
+    <div id="teacherMenuItems">
+      <div class="menu-item" onclick="switchTeacherView('scan')"><i class="fa-solid fa-qrcode"></i> ตรวจและสแกนงาน</div>
+      <div class="menu-item" onclick="openCreateAssignmentModal()"><i class="fa-solid fa-square-plus"></i> สร้างชิ้นงาน</div>
+    </div>
+    <div id="studentMenuItems" class="hidden">
+      <div class="menu-item" onclick="switchStudentView('dashboard')"><i class="fa-solid fa-chart-simple"></i> แผงควบคุมและงาน</div>
+    </div>
+    <hr style="border-color: #475569;">
+    <div class="menu-item text-danger" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> ออกจากระบบ</div>
+  </div>
+
   <div class="container py-4">
     <div id="loginSection" class="row justify-content-center">
       <div class="col-md-5">
         <div class="card p-4 mt-5">
-          <h3 class="text-center mb-3 text-primary fw-bold">QR Homework</h3>
-          <p class="text-center text-muted">กรุณาเลือกประเภทผู้ใช้งานเพื่อเข้าสู่ระบบ</p>
+          <h3 class="text-center mb-4 text-primary fw-bold">ระบบ QR Homework</h3>
+          <p class="text-center text-muted fw-bold">เลือกประเภทผู้ใช้งาน: ครู / นักเรียน</p>
           
-          <div class="btn-group role-btn-group w-100 mb-4" role="group">
+          <div class="btn-group w-100 mb-4" role="group">
             <input type="radio" class="btn-check" name="roleSelect" id="roleTeacher" value="teacher" checked>
-            <label class="btn btn-outline-primary" for="roleTeacher">👨‍🏫 คุณครู</label>
+            <label class="btn btn-outline-primary py-2" for="roleTeacher">👨‍🏫 ครู</label>
 
             <input type="radio" class="btn-check" name="roleSelect" id="roleStudent" value="student">
-            <label class="btn btn-outline-primary" for="roleStudent">🎓 นักเรียน</label>
+            <label class="btn btn-outline-primary py-2" for="roleStudent">🎓 นักเรียน</label>
           </div>
 
           <div class="mb-3">
@@ -59,43 +89,33 @@
             <label class="form-label">รหัสผ่าน (Password)</label>
             <input type="password" id="password" class="form-control" placeholder="กรอกรหัสผ่าน">
           </div>
-          <button onclick="handleLogin()" class="btn btn-primary w-100 py-2 mb-3">เข้าสู่ระบบ</button>
-          <button onclick="unlockAudio()" class="btn btn-sm btn-outline-secondary w-100 mb-2">🔊 เปิดใช้งานระบบเสียงเตือน</button>
+          <button onclick="handleLogin()" class="btn btn-primary w-100 py-2 mb-2">เข้าสู่ระบบ</button>
           <div id="loginError" class="text-danger text-center mt-3 fw-bold"></div>
         </div>
       </div>
     </div>
 
     <div id="teacherSection" class="row justify-content-center hidden">
-      <div class="col-md-12 text-center mb-4">
-        <h4>คุณครูผู้ตรวจ: <span id="teacherNameTxt" class="text-success fw-bold"></span></h4>
-        <button onclick="logout()" class="btn btn-sm btn-outline-danger">ออกจากระบบ</button>
-      </div>
-
       <div class="col-md-6 mb-4">
         <div class="card p-4 mb-4">
-          <h5 class="card-title mb-3 text-primary d-flex justify-content-between align-items-center">
-            <span>1. เลือกงานที่ต้องการตรวจ</span>
-            <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#createAssignmentModal">➕ สร้างงานใหม่</button>
-          </h5>
+          <h5 class="card-title mb-3 text-primary fw-bold">เลือกงานที่ต้องการตรวจ</h5>
           <select id="assignmentSelect" class="form-select form-select-lg mb-3" onchange="updateDashboard()">
             <option value="">-- กรุณาเลือกชิ้นงาน --</option>
           </select>
 
           <div class="mb-4">
-            <label class="form-label fw-bold text-secondary">รูปแบบการให้คะแนนเมื่อสแกน:</label>
+            <label class="form-label fw-bold text-secondary">รูปแบบการให้คะแนน:</label>
             <div class="btn-group w-100" role="group">
               <input type="radio" class="btn-check" name="scoringMode" id="scoreDefault" value="default" checked>
-              <label class="btn btn-outline-primary" for="scoreDefault">🏆 คะแนนเต็ม (Default)</label>
+              <label class="btn btn-outline-primary" for="scoreDefault">🏆 คะแนนเต็ม</label>
               
               <input type="radio" class="btn-check" name="scoringMode" id="scoreCustom" value="custom">
-              <label class="btn btn-outline-primary" for="scoreCustom">✏️ กรอกเอง (มีปุ่มกด)</label>
+              <label class="btn btn-outline-primary" for="scoreCustom">✏️ กรอกคะแนน</label>
             </div>
           </div>
 
-          <h5 class="card-title mb-3 text-primary">2. ส่อง QR Code เพื่อตรวจส่งงาน</h5>
           <div class="text-center mb-3">
-            <button id="startCamBtn" onclick="startLightningScanner()" class="btn btn-success btn-lg w-100 py-3 mb-2">📷 เปิดกล้องสแกนความเร็วสูง</button>
+            <button id="startCamBtn" onclick="startLightningScanner()" class="btn btn-success btn-lg w-100 py-3 mb-2 fw-bold"><i class="fa-solid fa-camera"></i> เปิดกล้อง</button>
             <button id="stopCamBtn" onclick="stopLightningScanner()" class="btn btn-danger w-100 mb-2 hidden">ปิดกล้อง</button>
           </div>
           
@@ -112,10 +132,10 @@
 
       <div class="col-md-6">
         <div class="card p-4">
-          <h5 class="card-title mb-3 text-primary">Dashboard สรุปภาพรวม</h5>
+          <h5 class="card-title mb-3 text-primary fw-bold" id="dashboardMainTitle">การส่งงาน [ชื่องาน]</h5>
           
           <div class="mb-3">
-            <label class="form-label fw-bold text-secondary">🎯 เลือกห้องเรียนเพื่อกรองข้อมูล:</label>
+            <label class="form-label fw-bold text-secondary">เลือกห้องเรียน:</label>
             <select id="roomFilterSelect" class="form-select" onchange="renderFilteredDashboard()">
               <option value="all">-- แสดงทุกห้อง --</option>
             </select>
@@ -144,35 +164,30 @@
     </div>
 
     <div id="studentSection" class="row justify-content-center hidden">
-      <div class="col-md-8 text-center mb-4">
-        <h4>ยินดีต้อนรับนักเรียน: <span id="studentNameTxt" class="text-primary fw-bold"></span></h4>
-        <button onclick="logout()" class="btn btn-sm btn-outline-danger">ออกจากระบบ</button>
-      </div>
-
-      <div class="col-md-8">
+      <div class="col-md-9">
         <div class="row mb-4 text-center">
           <div class="col-md-4 mb-3">
             <div class="card p-3 bg-success text-white h-100">
-              <h6>✔ ภารกิจส่งแล้ว</h6>
+              <h6>✔ จำนวนงานที่ส่งแล้ว</h6>
               <h2 id="stuSubmittedCount" class="fw-bold mt-2">0</h2>
             </div>
           </div>
           <div class="col-md-4 mb-3">
             <div class="card p-3 bg-warning text-dark h-100">
-              <h6>⚠️ ภารกิจค้างส่ง</h6>
+              <h6>⚠️ จำนวนงานที่ยังไม่ส่ง</h6>
               <h2 id="stuMissingCount" class="fw-bold mt-2 text-danger">0</h2>
             </div>
           </div>
           <div class="col-md-4 mb-3">
             <div class="card p-3 bg-info text-dark h-100" style="background-color: #e0f7fa !important; border: 2px solid #00acc1;">
-              <h6 class="fw-bold text-dark">🪙 คอยน์สะสมของคุณ</h6>
+              <h6 class="fw-bold text-dark">🪙 Coins</h6>
               <h2 id="stuCoinCount" class="fw-bold mt-2 text-primary">0</h2>
             </div>
           </div>
         </div>
 
         <div class="card p-4">
-          <h5 class="card-title mb-3 text-primary fw-bold">📝 รายการภารกิจ</h5>
+          <h5 class="card-title mb-3 text-primary fw-bold">📝 งานทั้งหมด</h5>
           <div class="table-responsive">
             <table class="table table-hover">
               <thead class="table-light">
@@ -181,540 +196,4 @@
                   <th class="text-center" style="width: 150px;">สถานะการส่ง</th>
                 </tr>
               </thead>
-              <tbody id="studentJobsTableBody">
-                <tr>
-                  <td colspan="2" class="text-center text-muted">กำลังโหลดข้อมูล...</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="modal fade" id="customScoreModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" style="max-width: 380px;">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title text-primary fw-bold">✏️ สแกนผ่านแล้ว! กรอกคะแนน</h5>
-          <button type="button" class="btn-close" onclick="cancelCustomScore()" aria-label="Close"></button>
-        </div>
-        <div class="modal-body text-center">
-          <h6 id="scoreModalStudentName" class="mb-3 text-success fw-bold">เลขที่ - : นักเรียน</h6>
-          <input type="text" id="scoreInputDisplay" class="form-control form-control-lg text-center mb-3" readonly style="font-size: 2rem; font-weight: bold; background-color: #fff;">
-          
-          <div class="row g-2 mb-3">
-            <div class="col-4"><button onclick="pressNum(1)" class="btn btn-outline-secondary w-100 calc-btn">1</button></div>
-            <div class="col-4"><button onclick="pressNum(2)" class="btn btn-outline-secondary w-100 calc-btn">2</button></div>
-            <div class="col-4"><button onclick="pressNum(3)" class="btn btn-outline-secondary w-100 calc-btn">3</button></div>
-            <div class="col-4"><button onclick="pressNum(4)" class="btn btn-outline-secondary w-100 calc-btn">4</button></div>
-            <div class="col-4"><button onclick="pressNum(5)" class="btn btn-outline-secondary w-100 calc-btn">5</button></div>
-            <div class="col-4"><button onclick="pressNum(6)" class="btn btn-outline-secondary w-100 calc-btn">6</button></div>
-            <div class="col-4"><button onclick="pressNum(7)" class="btn btn-outline-secondary w-100 calc-btn">7</button></div>
-            <div class="col-4"><button onclick="pressNum(8)" class="btn btn-outline-secondary w-100 calc-btn">8</button></div>
-            <div class="col-4"><button onclick="pressNum(9)" class="btn btn-outline-secondary w-100 calc-btn">9</button></div>
-            <div class="col-4"><button onclick="clearScore()" class="btn btn-danger w-100 calc-btn">C</button></div>
-            <div class="col-4"><button onclick="pressNum(0)" class="btn btn-outline-secondary w-100 calc-btn">0</button></div>
-            <div class="col-4"><button onclick="backspaceScore()" class="btn btn-secondary w-100 calc-btn">⌫</button></div>
-          </div>
-          
-          <div class="d-flex gap-2">
-            <button onclick="cancelCustomScore()" class="btn btn-outline-danger w-100 py-2">ยกเลิก</button>
-            <button onclick="submitCustomScore()" class="btn btn-primary w-100 py-2">💾 บันทึกคะแนน</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="modal fade" id="createAssignmentModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title text-primary fw-bold">➕ เพิ่มภารกิจงานใหม่</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <div class="mb-3">
-            <label class="form-label fw-bold">ชื่องาน (Assignment Name)</label>
-            <input type="text" id="newAssignName" class="form-control" placeholder="เช่น แบบฝึกหัดหน่วยที่ 1">
-          </div>
-          <div class="mb-3">
-            <label class="form-label fw-bold">เดือนที่สั่ง (Assign Month)</label>
-            <select id="newAssignDate" class="form-select">
-              <option value="มกราคม">มกราคม</option><option value="กุมภาพันธ์">กุมภาพันธ์</option>
-              <option value="มีนาคม">มีนาคม</option><option value="เมษายน">เมษายน</option>
-              <option value="พฤษภาคม">พฤษภาคม</option><option value="มิถุนายน">มิถุนายน</option>
-              <option value="กรกฎาคม">กรกฎาคม</option><option value="สิงหาคม">สิงหาคม</option>
-              <option value="กันยายน">กันยายน</option><option value="ตุลาคม">ตุลาคม</option>
-              <option value="พฤศจิกายน">พฤศจิกายน</option><option value="ธันวาคม">ธันวาคม</option>
-            </select>
-          </div>
-          <div class="mb-3">
-            <label class="form-label fw-bold">กำหนดส่งเดือน (Due Month)</label>
-            <select id="newDueDate" class="form-select">
-              <option value="มกราคม">มกราคม</option><option value="กุมภาพันธ์">กุมภาพันธ์</option>
-              <option value="มีนาคม">มีนาคม</option><option value="เมษายน">เมษายน</option>
-              <option value="พฤษภาคม">พฤษภาคม</option><option value="มิถุนายน">มิถุนายน</option>
-              <option value="กรกฎาคม">กรกฎาคม</option><option value="สิงหาคม">สิงหาคม</option>
-              <option value="กันยายน">กันยายน</option><option value="ตุลาคม">ตุลาคม</option>
-              <option value="พฤศจิกายน">พฤศจิกายน</option><option value="ธันวาคม">ธันวาคม</option>
-            </select>
-          </div>
-          <div class="mb-3">
-            <label class="form-label fw-bold">คะแนนเต็มประจำงาน (Points)</label>
-            <input type="number" id="newAssignPoint" class="form-control" placeholder="ใส่เฉพาะตัวเลขเท่านั้น เช่น 10" min="0">
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
-          <button type="button" onclick="submitNewAssignment()" class="btn btn-primary">บันทึกข้อมูลงาน</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <script>
-    let audioCtx = null;
-    function unlockAudio() {
-      try {
-        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        if (audioCtx.state === 'suspended') audioCtx.resume();
-        playSuccessSound();
-        alert("เปิดสัญญาณระบบเสียงเรียบร้อยแล้ว เบราว์เซอร์ Safari สามารถทำงานได้แล้วครับ!");
-      } catch (e) {
-        alert("ไม่สามารถเปิดระบบเสียงได้: " + e.message);
-      }
-    }
-    function playSuccessSound() {
-      try {
-        if (!audioCtx) return;
-        let osc = audioCtx.createOscillator(); let gain = audioCtx.createGain();
-        osc.connect(gain); gain.connect(audioCtx.destination);
-        osc.type = "sine"; osc.frequency.setValueAtTime(1400, audioCtx.currentTime);
-        gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.05);
-        osc.start(); osc.stop(audioCtx.currentTime + 0.05);
-      } catch (e) {}
-    }
-    function playErrorSound() {
-      try {
-        if (!audioCtx) return;
-        let osc = audioCtx.createOscillator(); let gain = audioCtx.createGain();
-        osc.connect(gain); gain.connect(audioCtx.destination);
-        osc.type = "triangle"; osc.frequency.setValueAtTime(180, audioCtx.currentTime);
-        gain.gain.setValueAtTime(0.18, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
-        osc.start(); osc.stop(audioCtx.currentTime + 0.2);
-      } catch (e) {}
-    }
-  </script>
-
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  <script>
-    // URL Google Script Web App ของคุณครู
-    const BACKEND_URL = "https://script.google.com/macros/s/AKfycbzuXvt7_gU_PS34AvWmNZ9XSKIx68Gk76yUC7WvMU_8esPHL53hXOHgLxnXcCdY5Oa-/exec";
-
-    let currentTeacherId = "";
-    let currentStudentId = "";
-    let isProcessing = false;
-    let lastScannedText = "";
-    
-    let videoStream = null;
-    let animationFrameId = null;
-    let videoElement, canvasElement, canvasCtx;
-
-    // ตัวแปรเก็บข้อมูลหลังแสกนคิวอาร์สำหรับหน้ากรอกคะแนนเอง
-    let tempScannedStudentId = "";
-    let cachedStudentsDashboard = []; // เก็บรายชื่อที่ได้มาทั้งหมดเพื่อนำไปใช้ฟิลเตอร์ทีหลัง
-
-    async function callBackend(data) {
-      const response = await fetch(BACKEND_URL, {
-        method: "POST",
-        mode: "cors",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify(data)
-      });
-      return await response.json();
-    }
-
-    function handleLogin() {
-      if (window.AudioContext || window.webkitAudioContext) {
-        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
-      }
-      
-      const user = document.getElementById('username').value.trim();
-      const pass = document.getElementById('password').value.trim();
-      
-      if(!user || !pass) { 
-        alert("กรุณากรอกชื่อผู้ใช้และรหัสผ่านให้ครบถ้วนครับ"); 
-        return; 
-      }
-      
-      const role = document.querySelector('input[name="roleSelect"]:checked').value;
-      document.getElementById('loginError').innerText = "กำลังเชื่อมต่อกับฐานข้อมูล...";
-
-      if (role === "teacher") {
-        callBackend({ action: "checkLogin", username: user, password: pass }).then(response => {
-          if(response.success) {
-            currentTeacherId = response.teacherId;
-            document.getElementById('teacherNameTxt').innerText = response.teacherName;
-            document.getElementById('loginSection').classList.add('hidden');
-            document.getElementById('teacherSection').classList.remove('hidden');
-            loadAssignments();
-          } else { 
-            document.getElementById('loginError').innerText = response.message; 
-          }
-        }).catch(e => { 
-          document.getElementById('loginError').innerText = "ล็อกอินไม่สำเร็จ โปรดกดปุ่มด้านล่างเพื่ออนุญาตสิทธิ์ก่อนล็อกอิน"; 
-        });
-      } else {
-        callBackend({ action: "studentLogin", username: user, password: pass }).then(response => {
-          if(response.success) {
-            currentStudentId = response.studentId;
-            document.getElementById('studentNameTxt').innerText = response.studentName;
-            document.getElementById('loginSection').classList.add('hidden');
-            document.getElementById('studentSection').classList.remove('hidden');
-            loadStudentDashboard();
-          } else {
-            document.getElementById('loginError').innerText = response.message;
-          }
-        }).catch(e => { 
-          document.getElementById('loginError').innerText = "ล็อกอินไม่สำเร็จ โปรดกดปุ่มด้านล่างเพื่ออนุญาตสิทธิ์ก่อนล็อกอิน"; 
-        });
-      }
-    }
-
-    function loadAssignments() {
-      callBackend({ action: "getAssignments" }).then(assignments => {
-        const select = document.getElementById('assignmentSelect');
-        select.innerHTML = '<option value="">-- กรุณาเลือกชิ้นงาน --</option>';
-        assignments.forEach(item => {
-          let opt = document.createElement('option'); opt.value = item.id; opt.innerText = `[${item.id}] ${item.name}`;
-          select.appendChild(opt);
-        });
-      });
-    }
-
-    function submitNewAssignment() {
-      const name = document.getElementById('newAssignName').value;
-      const assignDate = document.getElementById('newAssignDate').value;
-      const dueDate = document.getElementById('newDueDate').value;
-      const points = document.getElementById('newAssignPoint').value;
-
-      if (!name || !points) {
-        alert("กรุณากรอกข้อมูล ชื่องาน และ คะแนนเต็ม ให้ครบถ้วนครับ!");
-        return;
-      }
-
-      const modalElement = document.getElementById('createAssignmentModal');
-      const modal = bootstrap.Modal.getInstance(modalElement);
-      
-      callBackend({
-        action: "createAssignment",
-        name: name,
-        assignDate: assignDate,
-        dueDate: dueDate,
-        points: points,
-        teacherId: currentTeacherId
-      }).then(res => {
-        if(res.success) {
-          alert(res.message);
-          modal.hide();
-          document.getElementById('newAssignName').value = "";
-          document.getElementById('newAssignPoint').value = "";
-          loadAssignments();
-        } else {
-          alert("ล้มเหลว: " + res.message);
-        }
-      });
-    }
-
-    // โหลดหน้าแสดงผลนักเรียน (แก้ไขเหลือแค่ ชื่องาน และ สถานะ + แสดงผล Coin)
-    function loadStudentDashboard() {
-      const tableBody = document.getElementById('studentJobsTableBody');
-      tableBody.innerHTML = `<tr><td colspan="2" class="text-center text-muted">กำลังดึงข้อมูล...</td></tr>`;
-
-      callBackend({ action: "getStudentDashboard", studentId: currentStudentId }).then(data => {
-        if (data.success) {
-          document.getElementById('stuSubmittedCount').innerText = data.submittedCount;
-          document.getElementById('stuMissingCount').innerText = data.missingJobsCount;
-          // แสดงคอยน์ที่บวกเก็บไว้ในชีต
-          document.getElementById('stuCoinCount').innerText = data.coins + " 🪙";
-          
-          tableBody.innerHTML = "";
-          if(data.allJobs.length === 0) {
-            tableBody.innerHTML = `<tr><td colspan="2" class="text-center text-success fw-bold">ยังไม่มีข้อมูลภารกิจงานในระบบขณะนี้ 🎉</td></tr>`;
-            return;
-          }
-
-          data.allJobs.forEach(job => {
-            const tr = document.createElement('tr');
-            const statusBadge = job.status === "ส่งแล้ว" 
-              ? `<span class="badge bg-success" style="font-size:0.95rem;">✔ ส่งแล้ว</span>`
-              : `<span class="badge bg-danger" style="font-size:0.95rem;">❌ ยังไม่ส่ง</span>`;
-
-            // เหลือเพียง 2 คอลัมน์หลักตามที่อยากให้ปรับ
-            tr.innerHTML = `
-              <td><span class="fw-bold">${job.name}</span></td>
-              <td class="text-center">${statusBadge}</td>
-            `;
-            tableBody.appendChild(tr);
-          });
-        }
-      });
-    }
-
-    function startLightningScanner() {
-      const assignmentId = document.getElementById('assignmentSelect').value;
-      if (!assignmentId) { alert("กรุณาเลือกชิ้นงานก่อนตรวจครับ!"); return; }
-
-      videoElement = document.getElementById("hiddenVideo");
-      canvasElement = document.getElementById("previewCanvas");
-      canvasCtx = canvasElement.getContext("2d", { willReadFrequently: true });
-
-      document.getElementById('startCamBtn').classList.add('hidden');
-      document.getElementById('stopCamBtn').classList.remove('hidden');
-      document.getElementById('canvas-container').classList.remove('hidden');
-
-      navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment", width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 60 } }
-      }).then(function(stream) {
-        videoStream = stream;
-        videoElement.srcObject = stream;
-        videoElement.play();
-        animationFrameId = requestAnimationFrame(tickScan);
-      }).catch(function(err) {
-        alert("ไม่สามารถเข้าถึงกล้องหลังได้: " + err);
-        stopLightningScanner();
-      });
-    }
-
-    function tickScan() {
-      if (videoElement && videoElement.readyState === videoElement.HAVE_ENOUGH_DATA) {
-        const vWidth = videoElement.videoWidth;
-        const vHeight = videoElement.videoHeight;
-        
-        canvasElement.width = vWidth;
-        canvasElement.height = vHeight;
-        
-        canvasCtx.drawImage(videoElement, 0, 0, vWidth, vHeight);
-        
-        const roiX = Math.floor(vWidth * 0.15);
-        const roiY = Math.floor(vHeight * 0.15);
-        const roiWidth = Math.floor(vWidth * 0.7);
-        const roiHeight = Math.floor(vHeight * 0.7);
-        
-        const imageData = canvasCtx.getImageData(roiX, roiY, roiWidth, roiHeight);
-        const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" });
-
-        if (code && code.data) {
-          onScanMatched(code.data);
-        }
-      }
-      if (videoStream) {
-        animationFrameId = requestAnimationFrame(tickScan);
-      }
-    }
-
-    function stopLightningScanner() {
-      if (animationFrameId) cancelAnimationFrame(animationFrameId);
-      if (videoStream) {
-        videoStream.getTracks().forEach(track => track.stop());
-        videoStream = null;
-      }
-      document.getElementById('startCamBtn').classList.remove('hidden');
-      document.getElementById('stopCamBtn').classList.add('hidden');
-      document.getElementById('canvas-container').classList.add('hidden');
-    }
-
-    // ฟังก์ชันประมวลผลเมื่อสแกนเจอคิวอาร์ (คัดกรองโหมดให้คะแนน)
-    function onScanMatched(decodedText) {
-      const cleanStudentId = String(decodedText).trim();
-      if (isProcessing || cleanStudentId === lastScannedText) return;
-      isProcessing = true;
-      lastScannedText = cleanStudentId;
-
-      const assignmentId = document.getElementById('assignmentSelect').value;
-      const mode = document.querySelector('input[name="scoringMode"]:checked').value;
-
-      if (mode === "default") {
-        // บันทึกผ่านคะแนนเต็ม
-        sendScoreToBackend(cleanStudentId, assignmentId, null);
-      } else {
-        // หากเลือกแบบกรอกเอง -> ให้หยุดตรวจชั่วคราวแล้วให้เด้ง Popup แทน
-        tempScannedStudentId = cleanStudentId;
-        stopLightningScanner();
-        
-        // ค้นหาข้อมูลรายชื่อนักเรียนเบื้องต้นในชีตมาแสดงในโมดัลช่วยไกด์คุณครู
-        const stuObj = cachedStudentsDashboard.find(x => x.id === cleanStudentId);
-        const displayName = stuObj ? stuObj.name : "รหัส: " + cleanStudentId;
-        document.getElementById('scoreModalStudentName').innerText = displayName;
-        
-        // ล้างกล่องพิมพ์ก่อนพิมพ์ใหม่
-        document.getElementById('scoreInputDisplay').value = "";
-        
-        // เปิดโมดัลคะแนนเครื่องคิดเลข
-        const scoreModal = new bootstrap.Modal(document.getElementById('customScoreModal'));
-        scoreModal.show();
-      }
-    }
-
-    // จัดการระบบปุ่มกดเครื่องคิดเลขใน Modal
-    function pressNum(num) {
-      const display = document.getElementById('scoreInputDisplay');
-      display.value = display.value + num;
-    }
-    function clearScore() {
-      document.getElementById('scoreInputDisplay').value = "";
-    }
-    function backspaceScore() {
-      const display = document.getElementById('scoreInputDisplay');
-      display.value = display.value.slice(0, -1);
-    }
-    function cancelCustomScore() {
-      const scoreModal = bootstrap.Modal.getInstance(document.getElementById('customScoreModal'));
-      if(scoreModal) scoreModal.hide();
-      
-      // ล้างข้อมูลและเปิดกล้องสแกนต่อทันที
-      tempScannedStudentId = "";
-      setTimeout(() => { 
-        lastScannedText = "";
-        isProcessing = false;
-        startLightningScanner();
-      }, 500);
-    }
-
-    function submitCustomScore() {
-      const scoreVal = document.getElementById('scoreInputDisplay').value.trim();
-      if(scoreVal === "") {
-        alert("กรุณาป้อนคะแนนในกล่องก่อนกดบันทึกครับ");
-        return;
-      }
-      
-      const scoreModal = bootstrap.Modal.getInstance(document.getElementById('customScoreModal'));
-      if(scoreModal) scoreModal.hide();
-
-      const assignmentId = document.getElementById('assignmentSelect').value;
-      sendScoreToBackend(tempScannedStudentId, assignmentId, scoreVal);
-    }
-
-    // ฟังก์ชันยิงสัญญาณตรวจคะแนนไปหลังบ้าน
-    function sendScoreToBackend(studentId, assignmentId, score) {
-      callBackend({ 
-        action: "processQrScan", 
-        studentId: studentId, 
-        assignmentId: assignmentId, 
-        teacherId: currentTeacherId,
-        score: score 
-      }).then(result => {
-        const resBox = document.getElementById('resultMessage');
-        resBox.classList.remove('hidden', 'bg-success-custom', 'bg-danger-custom');
-        document.body.classList.remove('scan-success-flash', 'scan-delay-flash');
-
-        if(result.success) {
-          playSuccessSound();
-          resBox.className = "result-box bg-success-custom";
-          resBox.innerHTML = `✔ ${result.message}<br>เลขที่ ${result.student.number} : ${result.student.name}`;
-          document.body.classList.add('scan-success-flash');
-          updateDashboard();
-        } else {
-          playErrorSound();
-          resBox.className = "result-box bg-danger-custom";
-          if(result.status === 'duplicate') {
-            resBox.innerHTML = `❌ ${result.message}<br>เลขที่ ${result.student.number} : ${result.student.name} ส่งแล้ว`;
-          } else {
-            resBox.innerHTML = `❌ ${result.message}`;
-          }
-          document.body.classList.add('scan-delay-flash');
-        }
-
-        // หากเมื่อกี้สแกนแบบ Custom แล้วหยุดกล้อง ให้เปิดการตั้งค่ากล้องขึ้นมาทำงานต่อเลย
-        if(score !== null) {
-          startLightningScanner();
-        }
-
-        setTimeout(() => {
-          document.body.classList.remove('scan-success-flash', 'scan-delay-flash');
-          isProcessing = false;
-        }, 300);
-
-        setTimeout(() => { if(lastScannedText === studentId) lastScannedText = ""; }, 2000);
-      });
-    }
-
-    // ดึงค่าสถิติจากแดชบอร์ดมาเก็บในเครื่อง เพื่อทำฟิลเตอร์หน้าเว็บโดยไม่ต้องยิงหลังบ้านซ้ำ ๆ
-    function updateDashboard() {
-      const assignmentId = document.getElementById('assignmentSelect').value;
-      if (!assignmentId) return;
-
-      callBackend({ action: "getDashboardData", assignmentId: assignmentId }).then(dash => {
-        if(dash.success) {
-          cachedStudentsDashboard = dash.students;
-          
-          // สร้างรายการรายชื่อห้องเรียนมาใส่ใน Dropdown ฟิลเตอร์
-          const filterSelect = document.getElementById('roomFilterSelect');
-          const lastSelectedRoom = filterSelect.value; // บันทึกห้องที่ครูเคยกรองไว้
-          
-          // หาห้องเรียนที่มีทั้งหมด
-          const rooms = [...new Set(dash.students.map(item => item.room))].filter(Boolean);
-          rooms.sort();
-
-          filterSelect.innerHTML = '<option value="all">-- แสดงทุกห้อง --</option>';
-          rooms.forEach(room => {
-            let opt = document.createElement('option');
-            opt.value = room;
-            opt.innerText = "ห้อง " + room;
-            filterSelect.appendChild(opt);
-          });
-
-          // รักษาค่าฟิลเตอร์ที่เคยเลือกไว้ ถ้ายังมีห้องนั้นอยู่
-          if(rooms.includes(lastSelectedRoom)) {
-            filterSelect.value = lastSelectedRoom;
-          }
-
-          renderFilteredDashboard();
-        }
-      });
-    }
-
-    // เรื่องที่ 4: ฟังก์ชันการฟิลเตอร์แยกห้องเรียนบน Dashboard สรุปภาพรวม
-    function renderFilteredDashboard() {
-      const selectedRoom = document.getElementById('roomFilterSelect').value;
-      
-      // กรองนักเรียนตามสิทธิ์ห้องที่เลือก
-      const filteredStudents = cachedStudentsDashboard.filter(student => {
-        if (selectedRoom === "all") return true;
-        return student.room === selectedRoom;
-      });
-
-      const submittedCount = filteredStudents.filter(s => s.submitted).length;
-      const missingList = filteredStudents.filter(s => !s.submitted);
-      const missingCount = missingList.length;
-
-      // อัปเดตตัวเลขจำนวนคน
-      document.getElementById('dashSubmitted').innerText = submittedCount;
-      document.getElementById('dashMissing').innerText = missingCount;
-
-      // แสดงรายการคนค้างส่งแยกเฉพาะห้องเรียน
-      const listUl = document.getElementById('missingList'); 
-      listUl.innerHTML = "";
-      
-      if(missingList.length === 0) {
-        listUl.innerHTML = '<li class="list-group-item text-success text-center fw-bold">ส่งครบทุกคนแล้วในฟิลเตอร์นี้! 🎉</li>';
-      } else {
-        missingList.forEach(student => {
-          let li = document.createElement('li'); 
-          li.className = "list-group-item text-danger d-flex justify-content-between align-items-center"; 
-          li.innerHTML = `<span>${student.name}</span> <span class="badge bg-secondary">ห้อง ${student.room}</span>`;
-          listUl.appendChild(li);
-        });
-      }
-    }
-
-    function logout() { window.location.reload(); }
-  </script>
-</body>
-</html>
+              <tbody id="studentJobsTableBody
