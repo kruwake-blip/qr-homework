@@ -53,7 +53,6 @@
        ---------------------------------------------------------------------- */
     .pokemon-card-wrapper { display: flex; justify-content: center; padding: 15px; width: 100%; }
     
-    /* โครงสร้างพื้นหลังการ์ดฟุ้งสีรุ้งรอบด้านสำหรับระดับ 5 Legendary */
     .legendary-rainbow-aura {
       position: relative;
       padding: 0px; 
@@ -98,7 +97,6 @@
     .bg-rarity-3 { background: linear-gradient(135deg, #fff5f5 0%, #fed7d7 100%); border-color: #e53e3e; }
     .bg-rarity-4 { background: linear-gradient(45deg, #ff9a9e 0%, #fecfef 99%, #fecfef 100%); border-color: #d63384; animation: holo 3s infinite linear; }
     
-    /* การ์ดระดับ 5 Legendary: พื้นหลังดำสนิท และเปลี่ยนขอบเป็นสีทองเมทัลลิกไล่เฉดหรูหรา */
     .bg-rarity-5 { 
       background: #000000 !important; 
       border-image: linear-gradient(135deg, #bf953f 0%, #fcf6ba 25%, #b38728 50%, #fbf5b7 75%, #aa771c 100%) 1;
@@ -116,7 +114,6 @@
     .title-rarity-3 { color: #cc0000; font-weight: bold; }
     .title-rarity-4 { color: #fff; font-weight: 900; text-shadow: 2px 2px 4px #000, 0 0 10px #ff00ff; }
     
-    /* ตัวอักษรและดาวสีทองคำแวววาวประกายเมทัลลิก (Metallic Gold Gradient) */
     .text-gold-luxury {
       background: linear-gradient(to right, #bf953f 0%, #fcf6ba 25%, #b38728 50%, #fbf5b7 75%, #aa771c 100%);
       -webkit-background-clip: text;
@@ -126,7 +123,6 @@
       filter: drop-shadow(1px 2px 2px rgba(0,0,0,0.9));
     }
     
-    /* บอร์ดสีทองเมทัลลิกสำหรับ Badge ในหน้าคลัง */
     .badge-gold-luxury {
       background: linear-gradient(135deg, #bf953f 0%, #fcf6ba 25%, #b38728 50%, #fbf5b7 75%, #aa771c 100%) !important;
       color: #332200 !important;
@@ -141,10 +137,8 @@
     .card-title-text { font-size: 0.9rem; font-weight: bold; margin: 0; word-break: break-all; }
     .card-level-area { font-size: 0.75rem; font-weight: bold; color: #4a5568; margin-bottom: 4px; padding-left: 4px; z-index: 5; }
     
-    /* ดาวปกติ */
     .star-icon { color: #f6e05e; text-shadow: 1px 1px 1px #000; margin-left: 1px; }
     
-    /* ดาวทองเมทัลลิกสำหรับระดับ 5 Legendary */
     .star-gold-metallic {
       background: linear-gradient(135deg, #bf953f 0%, #fcf6ba 40%, #b38728 60%, #aa771c 100%);
       -webkit-background-clip: text;
@@ -177,7 +171,6 @@
     .card-list-row { background: #fff; border-radius: 8px; padding: 10px 15px; margin-bottom: 8px; border-left: 6px solid #6c757d; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
     .card-list-row:hover { transform: scale(1.01); }
 
-    /* แถวการ์ดระดับ 4 Secret */
     .row-rarity-4 {
       background: linear-gradient(90deg, #ffffff 0%, #ffedf2 70%, #f0f7ff 100%) !important;
       border-left: 6px solid #d63384 !important;
@@ -185,7 +178,6 @@
     }
     .row-rarity-4:hover { background: linear-gradient(90deg, #ffedf2 0%, #fecfef 100%) !important; }
 
-    /* แถวการ์ดระดับ 5 Legendary: พื้นหลังสีดำเงารุ้งฟุ้งรอบทิศทาง */
     .row-rarity-5 {
       background: #111111 !important;
       color: #ffffff !important;
@@ -204,7 +196,7 @@
     }
 
     /* ----------------------------------------------------------------------
-       4. เอฟเฟกต์จุดพิกเซลเกล็ดเพชร/ดวงดาวกระพริบ (Starry Pixel Effect สำหรับระดับ 5)
+       4. เอฟเฟกต์จุดพิกเซลเกล็ดเพชร/ดวงดาวกระพริบ
        ---------------------------------------------------------------------- */
     .star-pixel {
       position: absolute;
@@ -227,7 +219,7 @@
     }
 
     /* ----------------------------------------------------------------------
-       5. ลูกเล่นวิบวับวิ่งไปวิ่งมาระหว่างรอสุ่มการ์ด (Popup Gacha Loading)
+       5. ลูกเล่นวิบวับวิ่งไปวิ่งมาระหว่างรอสุ่มการ์ด
        ---------------------------------------------------------------------- */
     .gacha-anim-box { position: relative; width: 100%; height: 260px; display: flex; flex-direction: column; justify-content: center; align-items: center; overflow: hidden; }
     
@@ -487,6 +479,37 @@
     const rarityNames = ["Common", "Rare", "Super Rare", "Super Super Rare", "Secret", "Legendary"];
     const rarityBorderColors = ["#6c757d", "#0d6efd", "#fd7e14", "#dc3545", "#d63384", "#ffffff"];
 
+    // ฟังก์ชันเสริมสำหรับแปลงลิงก์เปิดเว็บของ Google Drive ให้กลายเป็น Direct Image URL เสมอ เพื่อแก้ปัญหารูปไม่แสดงผล
+    function formatDriveImageUrl(url) {
+      if (!url) return 'https://via.placeholder.com/300x300?text=No+Image';
+      let stringUrl = String(url).trim();
+      
+      // ตรวจสอบว่าเป็นลิงก์แชร์จาก Google Drive หรือไม่
+      if (stringUrl.includes("drive.google.com")) {
+        let fileId = "";
+        
+        // แบบที่ 1: /file/d/[FILE_ID]/view
+        if (stringUrl.includes("/file/d/")) {
+          let parts = stringUrl.split("/file/d/");
+          if (parts[1]) {
+            fileId = parts[1].split("/")[0].split("?")[0];
+          }
+        } 
+        // แบบที่ 2: ?id=[FILE_ID]
+        else if (stringUrl.includes("id=")) {
+          let parts = stringUrl.split("id=");
+          if (parts[1]) {
+            fileId = parts[1].split("&")[0];
+          }
+        }
+        
+        if (fileId) {
+          return `https://docs.google.com/uc?export=download&id=${fileId}`;
+        }
+      }
+      return stringUrl;
+    }
+
     function toggleSidebar() {
       document.getElementById('sidebarMenu').classList.toggle('active');
       document.getElementById('sidebarOverlay').classList.toggle('active');
@@ -604,7 +627,7 @@
               row.className = "card-list-row row-rarity-4";
             } else if(card.level === 5) {
               row.className = "card-list-row row-rarity-5";
-              badgeClass = "badge badge-gold-luxury"; // เงื่อนไข: เปลี่ยนป้ายคำว่า Legendary เป็นสีทองเมทัลลิก
+              badgeClass = "badge badge-gold-luxury"; 
               badgeStyle = "font-size:0.75rem;";
             } else {
               row.className = "card-list-row";
@@ -654,7 +677,6 @@
       let isLegendary = (card.level === 5);
       let starsHTML = "";
       
-      // เงื่อนไข: ถ้าเป็นการ์ดระดับ 5 ให้เปลี่ยนดาวเป็นสีทองเมทัลลิก
       for (let i = 0; i <= card.level; i++) {
         if (isLegendary) {
           starsHTML += '<i class="fa-solid fa-star star-gold-metallic"></i>';
@@ -667,7 +689,6 @@
       let levelTextClass = isLegendary ? "text-gold-luxury" : "";
       let headerBgClass = isLegendary ? "bg-header-legendary" : "";
 
-      // สร้างจุดพิกเซลดวงดาวระยิบระยับทั่วการ์ด (เฉพาะระดับ 5)
       let starsPixelsHTML = "";
       if(isLegendary) {
         for(let s = 0; s < 45; s++) {
@@ -677,6 +698,9 @@
           starsPixelsHTML += `<div class="star-pixel ${freqClass}" style="top:${randomTop}%; left:${randomLeft}%;"></div>`;
         }
       }
+      
+      // เรียกใช้ฟังก์ชันแปลงลิงก์ Google Drive ในแท็ก img src ด้านล่างนี้
+      let secureCardImg = formatDriveImageUrl(card.picture);
       
       let cardHtml = `
         <div class="${isLegendary ? 'legendary-rainbow-aura' : ''}">
@@ -693,7 +717,7 @@
             </div>
             
             <div class="card-image-screen">
-              <img src="${card.picture || 'https://via.placeholder.com/300x300?text=No+Image'}" alt="Card Image">
+              <img src="${secureCardImg}" alt="Card Image">
             </div>
             
             <div class="card-detail-box">
