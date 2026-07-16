@@ -258,6 +258,7 @@
 </head>
 <body>
 
+  <!-- แถบหัวข้อด้านบน -->
   <div id="topNavbar" class="top-navbar hidden">
     <button type="button" class="btn btn-outline-secondary border-0 p-1" onclick="toggleSidebar()">
       <i class="fa-solid fa-bars fa-lg" style="color:#e65100;"></i>
@@ -266,6 +267,7 @@
     <div id="userStatusTxt" class="user-status">กำลังโหลด...</div>
   </div>
 
+  <!-- แถบเมนูด้านซ้าย -->
   <div id="sidebarOverlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
   <div id="sidebarMenu" class="sidebar">
     <div id="teacherMenuItems" class="hidden">
@@ -281,6 +283,7 @@
   </div>
 
   <div class="container py-3">
+    <!-- หน้าแรก (Login Screen) -->
     <div id="loginSection" class="row justify-content-center">
       <div class="col-md-5">
         <div class="card p-4 mt-4" style="border: 2px solid #ffe0b2;">
@@ -306,6 +309,7 @@
       </div>
     </div>
 
+    <!-- ส่วนของคุณครู -->
     <div id="teacherSection" class="row justify-content-center hidden">
       <div class="col-md-6 mb-4">
         <div class="card p-4 mb-4">
@@ -352,6 +356,7 @@
       </div>
     </div>
 
+    <!-- ส่วนของนักเรียน -->
     <div id="studentSection" class="row justify-content-center hidden">
       <div class="col-md-9" id="studentDashTab">
         <div class="row mb-4 text-center">
@@ -390,6 +395,7 @@
     </div>
   </div>
 
+  <!-- POPUP MODAL: สุ่มการ์ดพลังพิกเซลโหลดดิ้ง -->
   <div class="modal fade" id="gachaAnimationModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered justify-content-center">
       <div class="modal-content bg-dark text-white text-center p-4 border-0" style="max-width:360px; border-radius:15px;">
@@ -404,12 +410,14 @@
     </div>
   </div>
 
+  <!-- POPUP MODAL: รายละเอียดการ์ดพลัง -->
   <div class="modal fade" id="pokemonCardDetailModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered justify-content-center" style="max-width: 100%;">
       <div id="pokemonCardInjectArea" class="pokemon-card-wrapper"></div>
     </div>
   </div>
 
+  <!-- POPUP MODAL: เครื่องคิดเลขคะแนนคุณครู -->
   <div class="modal fade" id="customScoreModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered" style="max-width: 380px;">
       <div class="modal-content">
@@ -443,6 +451,7 @@
     </div>
   </div>
 
+  <!-- POPUP MODAL แจ้งเตือนผลลัพธ์การสแกน -->
   <div class="modal fade" id="scanResultFeedbackModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
       <div id="modalContentFeedback" class="modal-content text-center p-4">
@@ -454,6 +463,7 @@
     </div>
   </div>
 
+  <!-- POPUP MODAL: เมนูสร้างชิ้นงานใหม่ -->
   <div class="modal fade" id="createAssignmentModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog"><div class="modal-content">
         <div class="modal-header"><h5 class="modal-title fw-bold" style="color:#e65100;">➕ เพิ่มชิ้นงานใหม่</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
@@ -479,21 +489,37 @@
     const rarityNames = ["Common", "Rare", "Super Rare", "Super Super Rare", "Secret", "Legendary"];
     const rarityBorderColors = ["#6c757d", "#0d6efd", "#fd7e14", "#dc3545", "#d63384", "#ffffff"];
 
-    // ฟังก์ชันระดับสูง: ใช้ Regular Expression (RegEx) เพื่อดึง ID ของ Google Drive ออกมาให้ได้ 100%
+    // ฟังก์ชันความแม่นยำสูงพิเศษ: แก้ไขข้อจำกัดของระบบประมวลผลลิงก์และการครอบสูตร =IMAGE บนอุปกรณ์พกพา
     function formatDriveImageUrl(url) {
       if (!url) return 'https://via.placeholder.com/300x300?text=No+Image';
       
-      // แปลงเป็น String และตัดช่องว่างหัวท้ายออกก่อน เผื่อคุณครูเผลอกดเคาะเว้นวรรคในเซลล์
       let cleanUrl = String(url).trim();
       
+      // ดักจับและสกัดเอาตัวลิงก์ออกมาในกรณีที่ระบบหลังบ้านดึงเอาสูตร =IMAGE พ่วงติดออกมาด้วย
+      if (cleanUrl.toUpperCase().startsWith("=IMAGE")) {
+        const matchUrl = cleanUrl.match(/"([^"]+)"/);
+        if (matchUrl && matchUrl[1]) {
+          cleanUrl = matchUrl[1].trim();
+        }
+      }
+      
+      // จัดการกับลิงก์ระบุตัวตนและคลังรูปภาพตระกูล Google User Content เช่น lh3.google.com
+      if (cleanUrl.includes("lh3.google.com")) {
+        // เจาะหา ID ของรูปภาพที่อยู่หลังโครงสร้างไดเรกทอรี /d/
+        const lhMatch = cleanUrl.match(/\/d\/([a-zA-Z0-9_-]{33,44})/);
+        if (lhMatch && lhMatch[1]) {
+          return `https://docs.google.com/uc?export=download&id=${lhMatch[1]}`;
+        }
+      }
+      
+      // จัดการกับลิงก์ Google Drive ในรูปแบบมาตรฐานและรูปแบบย่อทั้งหมด
       if (cleanUrl.includes("drive.google.com")) {
-        // ใช้ RegEx ดึงรหัส ID ความยาว 33-44 ตัวอักษรที่มักจะอยู่ตามหลัง /d/ หรือ id=
         const match = cleanUrl.match(/(?:https?:\/\/)?(?:drive\.google\.com\/)(?:(?:file\/d\/)|(?:open\?id=)|(?:uc\?id=))([a-zA-Z0-9_-]{33,44})/);
-        
         if (match && match[1]) {
           return `https://docs.google.com/uc?export=download&id=${match[1]}`;
         }
       }
+      
       return cleanUrl;
     }
 
@@ -686,7 +712,6 @@
         }
       }
       
-      // แปลง URL รูปภาพผ่าน RegEx ตัวใหม่ที่แก้ไขให้มีความเสถียรสูงสุด
       let secureCardImg = formatDriveImageUrl(card.picture);
       
       let cardHtml = `
