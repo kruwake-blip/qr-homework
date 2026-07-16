@@ -91,7 +91,6 @@
     .bg-rarity-3 { background: linear-gradient(135deg, #fff5f5 0%, #fed7d7 100%); border-color: #e53e3e; }
     .bg-rarity-4 { background: linear-gradient(45deg, #ff9a9e 0%, #fecfef 99%, #fecfef 100%); border-color: #d63384; animation: holo 3s infinite linear; }
     
-    /* ปรับปรุงขอบการ์ดระดับ 5 Legendary ให้โค้งมนเป็นระเบียบสวยงาม */
     .bg-rarity-5 { 
       background: #000000 !important; 
       border-color: #bf953f !important;
@@ -476,13 +475,13 @@
     const rarityNames = ["Common", "Rare", "Super Rare", "Super Super Rare", "Secret", "Legendary"];
     const rarityBorderColors = ["#6c757d", "#0d6efd", "#fd7e14", "#dc3545", "#d63384", "#bf953f"];
 
-    // ฟังก์ชันปรับปรุงใหม่: ดึงได้ทุกลิงก์ ไม่ว่าจะเป็นลิงก์ตรงทั่วไป ลิงก์ย่อ หรือลิงก์จากคลัง Google Drive
+    // ฟังก์ชันปรับปรุงพิเศษ: บังคับเปลี่ยนลิงก์ http ให้เป็น https ป้องกัน iOS บล็อกรูปภาพ และแปลงลิงก์ Drive ไปในตัว
     function formatDriveImageUrl(url) {
       if (!url) return 'https://via.placeholder.com/300x300?text=No+Image';
       
       let cleanUrl = String(url).trim();
       
-      // สกัดตัวลิงก์ออกมาในกรณีที่มีสูตรหลงเหลืออยู่
+      // สกัดตัวลิงก์ในกรณีที่ยังมีสูตรสเปรดชีตหลงมา
       if (cleanUrl.toUpperCase().startsWith("=IMAGE")) {
         const matchUrl = cleanUrl.match(/"([^"]+)"/);
         if (matchUrl && matchUrl[1]) {
@@ -490,7 +489,7 @@
         }
       }
       
-      // ดักจับเฉพาะลิงก์ตระกูล Google Drive เพื่อนำไปเข้าฟอร์แมตแปลงดาวน์โหลดรูปภาพ
+      // 1. ตรวจสอบและแปลงเฉพาะกลุ่ม Google Drive ให้เข้าฟอร์แมตดาวน์โหลดตรง
       if (cleanUrl.includes("drive.google.com") || cleanUrl.includes("lh3.google.com")) {
         const match = cleanUrl.match(/(?:file\/d\/|open\?id=|uc\?id=)([a-zA-Z0-9_-]{33,44})/);
         if (match && match[1]) {
@@ -498,7 +497,11 @@
         }
       }
       
-      // หากเป็นลิงก์ภายนอก เช่น https://lh3.google.com/u/0/d/1zUNVUSlVuR1w7Rw7riRht3l54O7W3NAG ให้ส่งกลับไปแสดงผลทันที
+      // 2. ป้องกันข้อจำกัด Mixed Content บน iOS: บังคับเปลี่ยน http:// เป็น https:// เสมอ
+      if (cleanUrl.toLowerCase().startsWith("http://")) {
+        cleanUrl = "https://" + cleanUrl.slice(7);
+      }
+      
       return cleanUrl;
     }
 
@@ -693,7 +696,6 @@
       
       let secureCardImg = formatDriveImageUrl(card.picture);
       
-      // ลบปุ่มปิดกากบาท (x) ออกจากโครงสร้างตามสั่ง สามารถแตะพื้นที่โดยรอบเพื่อปิดได้ทันที
       let cardHtml = `
         <div class="${isLegendary ? 'legendary-rainbow-aura' : ''}">
           <div class="pokemon-card bg-rarity-${card.level}">
