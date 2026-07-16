@@ -98,15 +98,15 @@
     .bg-rarity-3 { background: linear-gradient(135deg, #fff5f5 0%, #fed7d7 100%); border-color: #e53e3e; }
     .bg-rarity-4 { background: linear-gradient(45deg, #ff9a9e 0%, #fecfef 99%, #fecfef 100%); border-color: #d63384; animation: holo 3s infinite linear; }
     
-    /* การ์ดระดับ 5 Legendary: กระพริบเร็ววิบวับ ออกโทนสีดำเงินเมทัลลิกแบบพิเศษ */
+    /* การ์ดระดับ 5 Legendary: กระพริบเร็ววิบวับ พื้นหลังดำสนิทลึกลับ */
     .bg-rarity-5 { 
-      background: linear-gradient(135deg, #111111 0%, #434343 50%, #2c3e50 100%); 
+      background: #000000 !important; 
       border-color: #ffffff; 
       animation: fastMetallicFlash 0.5s infinite alternate ease-in-out;
     }
     @keyframes fastMetallicFlash {
-      0% { filter: brightness(0.9) contrast(1); box-shadow: 0 0 10px rgba(255,255,255,0.3); }
-      100% { filter: brightness(1.3) contrast(1.25) drop-shadow(0 0 15px rgba(255, 255, 255, 0.8)); }
+      0% { filter: brightness(0.9) contrast(1); box-shadow: 0 0 10px rgba(255,255,255,0.2); }
+      100% { filter: brightness(1.3) contrast(1.2) drop-shadow(0 0 12px rgba(255, 255, 255, 0.6)); }
     }
     @keyframes holo { 0% { filter: hue-rotate(0deg); } 100% { filter: hue-rotate(360deg); } }
 
@@ -115,14 +115,25 @@
     .title-rarity-2 { color: #ff6600; font-weight: bold; }
     .title-rarity-3 { color: #cc0000; font-weight: bold; }
     .title-rarity-4 { color: #fff; font-weight: 900; text-shadow: 2px 2px 4px #000, 0 0 10px #ff00ff; }
-    .title-rarity-5 { color: #ffffff; font-weight: bold; text-shadow: 0 0 8px #fff, 0 0 15px #00d2ff; }
+    
+    /* ตัวอักษรสีทองคำแวววาวประกายเมทัลลิกสำหรับระดับ 5 Legendary */
+    .text-gold-luxury {
+      background: linear-gradient(to right, #bf953f 0%, #fcf6ba 25%, #b38728 50%, #fbf5b7 75%, #aa771c 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      font-weight: 900 !important;
+      filter: drop-shadow(1px 2px 3px rgba(0,0,0,0.8));
+    }
 
-    .card-header-area { display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.7); padding: 4px 8px; border-radius: 6px; border: 1px solid rgba(0,0,0,0.15); margin-bottom: 4px; }
+    .card-header-area { display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.7); padding: 4px 8px; border-radius: 6px; border: 1px solid rgba(0,0,0,0.15); margin-bottom: 4px; z-index: 5; }
+    
+    /* หากเป็นการ์ดระดับ 5 จะปรับพื้นหลังของเฮดเดอร์ให้ออกโทนโปร่งใสเพื่อให้เห็นดาวด้านหลังชัดขึ้น */
+    .bg-header-legendary { background: rgba(20, 20, 20, 0.6) !important; border: 1px solid rgba(255,255,255,0.3) !important; }
+
     .card-title-text { font-size: 0.9rem; font-weight: bold; margin: 0; word-break: break-all; }
-    .card-level-area { font-size: 0.75rem; font-weight: bold; color: #4a5568; margin-bottom: 4px; padding-left: 4px; }
+    .card-level-area { font-size: 0.75rem; font-weight: bold; color: #4a5568; margin-bottom: 4px; padding-left: 4px; z-index: 5; }
     .star-icon { color: #f6e05e; text-shadow: 1px 1px 1px #000; margin-left: 1px; }
 
-    /* ปรับภาพบังคับสัดส่วน 1:1 เสมอ */
     .card-image-screen { 
       width: 100%; 
       aspect-ratio: 1 / 1; 
@@ -135,19 +146,72 @@
       justify-content: center; 
       align-items: center; 
       margin-bottom: 6px; 
+      z-index: 5;
     }
     .card-image-screen img { width: 100%; height: 100%; object-fit: cover; }
-    .card-detail-box { flex-grow: 1; background: #fffde7; border: 2px dashed #bcaaa4; border-radius: 6px; padding: 6px; font-size: 0.72rem; color: #5d4037; line-height: 1.3; overflow-y: auto; }
-
-    .card-list-row { background: #fff; border-radius: 8px; padding: 10px 15px; margin-bottom: 8px; border-left: 6px solid #6c757d; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: transform 0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-    .card-list-row:hover { transform: scale(1.01); background: #fff8f0; }
+    .card-detail-box { flex-grow: 1; background: #fffde7; border: 2px dashed #bcaaa4; border-radius: 6px; padding: 6px; font-size: 0.72rem; color: #5d4037; line-height: 1.3; overflow-y: auto; z-index: 5; }
 
     /* ----------------------------------------------------------------------
-       3. ลูกเล่นวิบวับวิ่งไปวิ่งมาระหว่างรอสุ่มการ์ด (Popup Gacha Loading)
+       3. การปรับแต่งดีไซน์แถวรายการในคลังเก็บการ์ดของนักเรียน (ตามเงื่อนไขข้อ 1)
+       ---------------------------------------------------------------------- */
+    .card-list-row { background: #fff; border-radius: 8px; padding: 10px 15px; margin-bottom: 8px; border-left: 6px solid #6c757d; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+    .card-list-row:hover { transform: scale(1.01); }
+
+    /* แถวการ์ดระดับ 4 Secret: ไล่สีรุ้งโฮโลแกรมเหมือนพื้นการ์ดระดับ 4 */
+    .row-rarity-4 {
+      background: linear-gradient(90deg, #ffffff 0%, #ffedf2 70%, #f0f7ff 100%) !important;
+      border-left: 6px solid #d63384 !important;
+      box-shadow: 0 3px 8px rgba(214, 51, 132, 0.15);
+    }
+    .row-rarity-4:hover { background: linear-gradient(90deg, #ffedf2 0%, #fecfef 100%) !important; }
+
+    /* แถวการ์ดระดับ 5 Legendary: พื้นหลังสีดำ และมีขอบเงาฟุ้งแสงสีรุ้งรอบทิศทาง */
+    .row-rarity-5 {
+      background: #111111 !important;
+      color: #ffffff !important;
+      border-left: 6px solid #ffffff !important;
+      position: relative;
+      box-shadow: 0 0 12px rgba(255, 0, 127, 0.4), 0 0 20px rgba(0, 191, 255, 0.3);
+      animation: listRowRainbowGlow 2.5s infinite alternate ease-in-out;
+    }
+    .row-rarity-5 span.text-dark, .row-rarity-5 strong.text-secondary {
+      color: #ffffff !important;
+    }
+    @keyframes listRowRainbowGlow {
+      0% { box-shadow: 0 0 10px rgba(255, 0, 127, 0.5), 0 0 15px rgba(0, 255, 127, 0.3); }
+      50% { box-shadow: 0 0 14px rgba(127, 0, 255, 0.6), 0 0 22px rgba(255, 255, 0, 0.4); }
+      100% { box-shadow: 0 0 10px rgba(0, 191, 255, 0.5), 0 0 15px rgba(255, 127, 0, 0.3); }
+    }
+
+    /* ----------------------------------------------------------------------
+       4. เอฟเฟกต์จุดพิกเซลเกล็ดเพชร/ดวงดาวกระพริบ (Starry Pixel Effect สำหรับระดับ 5)
+       ---------------------------------------------------------------------- */
+    .star-pixel {
+      position: absolute;
+      width: 3px;
+      height: 3px;
+      background-color: #ffffff;
+      border-radius: 50%;
+      z-index: 1;
+      opacity: 0;
+    }
+    /* กำหนดความถี่การกระพริบที่แตกต่างกัน 4 รูปแบบ */
+    .star-freq-1 { animation: diamondTwinkle 0.8s infinite ease-in-out; }
+    .star-freq-2 { animation: diamondTwinkle 1.4s infinite ease-in-out; }
+    .star-freq-3 { animation: diamondTwinkle 2.0s infinite ease-in-out; }
+    .star-freq-4 { animation: diamondTwinkle 2.6s infinite ease-in-out; }
+
+    @keyframes diamondTwinkle {
+      0% { opacity: 0; transform: scale(0.5); }
+      50% { opacity: 1; transform: scale(1.2); filter: drop-shadow(0 0 3px #fff); }
+      100% { opacity: 0; transform: scale(0.5); }
+    }
+
+    /* ----------------------------------------------------------------------
+       5. ลูกเล่นวิบวับวิ่งไปวิ่งมาระหว่างรอสุ่มการ์ด (Popup Gacha Loading)
        ---------------------------------------------------------------------- */
     .gacha-anim-box { position: relative; width: 100%; height: 260px; display: flex; flex-direction: column; justify-content: center; align-items: center; overflow: hidden; }
     
-    /* รางวิ่งของแสงวิบวับ */
     .gacha-shimmer-track {
       position: relative;
       width: 200px;
@@ -157,7 +221,6 @@
       overflow: hidden;
       margin-top: 15px;
     }
-    /* ตัวเม็ดแสงวิ่งไปมา */
     .gacha-shimmer-bead {
       position: absolute;
       top: 0;
@@ -184,6 +247,7 @@
 </head>
 <body>
 
+  <!-- แถบหัวข้อด้านบน -->
   <div id="topNavbar" class="top-navbar hidden">
     <button type="button" class="btn btn-outline-secondary border-0 p-1" onclick="toggleSidebar()">
       <i class="fa-solid fa-bars fa-lg" style="color:#e65100;"></i>
@@ -192,6 +256,7 @@
     <div id="userStatusTxt" class="user-status">กำลังโหลด...</div>
   </div>
 
+  <!-- แถบเมนูด้านซ้าย -->
   <div id="sidebarOverlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
   <div id="sidebarMenu" class="sidebar">
     <div id="teacherMenuItems" class="hidden">
@@ -207,6 +272,7 @@
   </div>
 
   <div class="container py-3">
+    <!-- หน้าแรก (Login Screen) -->
     <div id="loginSection" class="row justify-content-center">
       <div class="col-md-5">
         <div class="card p-4 mt-4" style="border: 2px solid #ffe0b2;">
@@ -232,6 +298,7 @@
       </div>
     </div>
 
+    <!-- ส่วนของคุณครู -->
     <div id="teacherSection" class="row justify-content-center hidden">
       <div class="col-md-6 mb-4">
         <div class="card p-4 mb-4">
@@ -278,6 +345,7 @@
       </div>
     </div>
 
+    <!-- ส่วนของนักเรียน -->
     <div id="studentSection" class="row justify-content-center hidden">
       <div class="col-md-9" id="studentDashTab">
         <div class="row mb-4 text-center">
@@ -316,13 +384,13 @@
     </div>
   </div>
 
+  <!-- POPUP MODAL: สุ่มการ์ดพลังพิกเซลโหลดดิ้ง -->
   <div class="modal fade" id="gachaAnimationModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered justify-content-center">
       <div class="modal-content bg-dark text-white text-center p-4 border-0" style="max-width:360px; border-radius:15px;">
         <div id="gachaAnimBody" class="gacha-anim-box">
           <div class="sparkle-pop-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
           <h4 class="fw-bold text-warning mt-2" style="z-index: 10; letter-spacing: 1px;">กำลังสุ่มการ์ดพลัง...</h4>
-          
           <div class="gacha-shimmer-track">
             <div class="gacha-shimmer-bead"></div>
           </div>
@@ -331,12 +399,14 @@
     </div>
   </div>
 
+  <!-- POPUP MODAL: รายละเอียดการ์ดพลัง -->
   <div class="modal fade" id="pokemonCardDetailModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered justify-content-center" style="max-width: 100%;">
       <div id="pokemonCardInjectArea" class="pokemon-card-wrapper"></div>
     </div>
   </div>
 
+  <!-- POPUP MODAL: เครื่องคิดเลขคะแนนคุณครู -->
   <div class="modal fade" id="customScoreModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered" style="max-width: 380px;">
       <div class="modal-content">
@@ -370,6 +440,7 @@
     </div>
   </div>
 
+  <!-- POPUP MODAL แจ้งเตือนผลลัพธ์การสแกน -->
   <div class="modal fade" id="scanResultFeedbackModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
       <div id="modalContentFeedback" class="modal-content text-center p-4">
@@ -381,6 +452,7 @@
     </div>
   </div>
 
+  <!-- POPUP MODAL: เมนูสร้างชิ้นงานใหม่ -->
   <div class="modal fade" id="createAssignmentModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog"><div class="modal-content">
         <div class="modal-header"><h5 class="modal-title fw-bold" style="color:#e65100;">➕ เพิ่มชิ้นงานใหม่</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
@@ -396,7 +468,6 @@
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
-    // **จุดสำคัญ:** คุณครูอย่าลืมตรวจสอบว่า URL Deployment ของ Apps Script ตรงกับอันปัจจุบันในกูเกิลชีตนะครับ
     const BACKEND_URL = "https://script.google.com/macros/s/AKfycbzuXvt7_gU_PS34AvWmNZ9XSKIx68Gk76yUC7WvMU_8esPHL53hXOHgLxnXcCdY5Oa-/exec";
 
     let currentTeacherId = ""; let currentStudentId = ""; let isProcessing = false; let lastScannedText = "";
@@ -517,8 +588,17 @@
           }
           data.myCards.forEach((card, index) => {
             const row = document.createElement('div');
-            row.className = "card-list-row";
-            row.style.borderLeftColor = card.level === 5 ? "#ffa000" : (rarityBorderColors[card.level] || "#6c757d");
+            
+            // ตรวจสอบเงื่อนไขข้อ 1: ปรับแต่งสไตล์พื้นหลังตามระดับเลเวลการ์ดในหน้าตารางคลังเก็บการ์ด
+            if(card.level === 4) {
+              row.className = "card-list-row row-rarity-4";
+            } else if(card.level === 5) {
+              row.className = "card-list-row row-rarity-5";
+            } else {
+              row.className = "card-list-row";
+              row.style.borderLeftColor = rarityBorderColors[card.level] || "#6c757d";
+            }
+            
             row.onclick = () => showPokemonCardDetail(card);
             row.innerHTML = `
               <div>
@@ -564,19 +644,35 @@
         starsHTML += '<i class="fa-solid fa-star star-icon"></i>';
       }
 
-      // สร้างโครงสร้าง HTML การ์ด หากเป็นการ์ดเลเวล 5 (Legendary) จะหุ้มด้วย Div ออร่าแสงรุ้งฟุ้งรอบตัวด้านหลัง
       let isLegendary = (card.level === 5);
+      
+      // เงื่อนไขข้อ 2: ตรวจสอบและประยุกต์คลาสตัวอักษรสีทองประกายสำหรับระดับ 5 Legendary
+      let headerTextClass = isLegendary ? "text-gold-luxury" : `title-rarity-${card.level}`;
+      let levelTextClass = isLegendary ? "text-gold-luxury" : "";
+      let headerBgClass = isLegendary ? "bg-header-legendary" : "";
+
+      // สร้างจุดพิกเซลเกล็ดเพชรระยิบระยับสุ่มกระจายตัวทั่วการ์ด (เฉพาะระดับ 5)
+      let starsPixelsHTML = "";
+      if(isLegendary) {
+        for(let s = 0; s < 45; s++) {
+          let randomTop = Math.floor(Math.random() * 96) + 2; 
+          let randomLeft = Math.floor(Math.random() * 96) + 2;
+          let freqClass = "star-freq-" + (Math.floor(Math.random() * 4) + 1); 
+          starsPixelsHTML += `<div class="star-pixel ${freqClass}" style="top:${randomTop}%; left:${randomLeft}%;"></div>`;
+        }
+      }
       
       let cardHtml = `
         <div class="${isLegendary ? 'legendary-rainbow-aura' : ''}">
           <div class="pokemon-card bg-rarity-${card.level}">
+            ${starsPixelsHTML}
             <div class="card-close-btn" onclick="closePokemonCardModal()">X</div>
             
-            <div class="card-header-area">
-              <h6 class="card-title-text title-rarity-${card.level}">${card.id}: ${card.name}</h6>
+            <div class="card-header-area ${headerBgClass}">
+              <h6 class="card-title-text ${headerTextClass}">${card.id}: ${card.name}</h6>
             </div>
             
-            <div class="card-level-area">
+            <div class="card-level-area ${levelTextClass}">
               Level: ${rarityNames[card.level]} ${starsHTML}
             </div>
             
