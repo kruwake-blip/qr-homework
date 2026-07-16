@@ -8,7 +8,7 @@
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-    body { background-color: #f0f2f5; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; transition: background-color 0.15s ease; padding-top: 56px; }
+    body { background-color: #f0f2f5; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; transition: background-color 0.3s ease; padding-top: 56px; }
     .card { border: none; box-shadow: 0 4px 10px rgba(0,0,0,0.08); border-radius: 12px; }
     .hidden { display: none !important; }
     
@@ -34,13 +34,16 @@
     .scan-target-box { position: absolute; top: 15%; left: 15%; width: 70%; height: 70%; border: 3px dashed #0d6efd; border-radius: 8px; box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.4); animation: pulse 1.5s infinite; }
     @keyframes pulse { 0% { border-color: #0d6efd; } 50% { border-color: #00ff66; } 100% { border-color: #0d6efd; } }
     
-    .result-box { padding: 20px; border-radius: 8px; font-weight: bold; text-align: center; margin-top: 15px; font-size: 1.2rem; }
-    .bg-success-custom { background-color: #d1e7dd; color: #0f5132; border: 3px solid #badbcc; }
-    .bg-danger-custom { background-color: #f8d7da; color: #842029; border: 3px solid #f5c2c7; }
-    body.scan-success-flash { background-color: #a3cfbb !important; }
-    body.scan-delay-flash { background-color: #f1aeb5 !important; }
+    /* เปลี่ยนสีพื้นหลังตามผลการสแกน */
+    body.scan-bg-success { background-color: #a3cfbb !important; }
+    body.scan-bg-danger { background-color: #f1aeb5 !important; }
     
     .calc-btn { height: 55px; font-size: 1.4rem; font-weight: bold; }
+
+    /* ปรับแต่งสไตล์ Popup แจ้งเตือนผลลัพธ์ */
+    .popup-status-icon { font-size: 4rem; margin-bottom: 15px; }
+    .modal-content-success { border: 4px solid #198754; }
+    .modal-content-danger { border: 4px solid #dc3545; }
   </style>
 </head>
 <body>
@@ -89,7 +92,7 @@
             <label class="form-label">รหัสผ่าน (Password)</label>
             <input type="password" id="password" class="form-control" placeholder="กรอกรหัสผ่าน">
           </div>
-          <button onclick="handleLogin()" class="btn btn-primary w-100 py-2 mb-2">เข้าสู่ระบบ</button>
+          <button id="loginBtn" onclick="handleLogin()" class="btn btn-primary w-100 py-2 mb-2">เข้าสู่ระบบ</button>
           <div id="loginError" class="text-danger text-center mt-3 fw-bold"></div>
         </div>
       </div>
@@ -126,7 +129,6 @@
               <div class="scan-target-box"></div>
             </div>
           </div>
-          <div id="resultMessage" class="result-box hidden"></div>
         </div>
       </div>
 
@@ -243,6 +245,16 @@
     </div>
   </div>
 
+  <div class="modal fade" id="scanResultFeedbackModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 400px;">
+      <div id="modalContentFeedback" class="modal-content text-center p-4">
+        <div id="popupIcon" class="popup-status-icon"></div>
+        <h3 id="popupStatusHeader" class="fw-bold mb-2"></h3>
+        <h5 id="popupStudentDetails" class="text-muted fw-bold"></h5>
+      </div>
+    </div>
+  </div>
+
   <div class="modal fade" id="createAssignmentModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
       <div class="modal-content">
@@ -253,7 +265,7 @@
         <div class="modal-body">
           <div class="mb-3">
             <label class="form-label fw-bold">ชื่องาน (Assignment Name)</label>
-            <input type="text" id="newAssignName" class="form-control" placeholder="เช่น ใบงานที่ 1 เรื่องการบวกเลข">
+            <input type="text" id="newAssignName" class="form-control" placeholder="เช่น ใบงานที่ 1">
           </div>
           <div class="mb-3">
             <label class="form-label fw-bold">เดือนที่สั่ง (Assign Month)</label>
@@ -326,7 +338,6 @@
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
-    // URL หลังบ้าน Google Apps Script ของคุณครู
     const BACKEND_URL = "https://script.google.com/macros/s/AKfycbzuXvt7_gU_PS34AvWmNZ9XSKIx68Gk76yUC7WvMU_8esPHL53hXOHgLxnXcCdY5Oa-/exec";
 
     let currentTeacherId = "";
@@ -341,27 +352,19 @@
     let tempScannedStudentId = "";
     let cachedStudentsDashboard = [];
 
-    // ฟังก์ชันเปิด-ปิดแถบเมนูด้านซ้าย (Sidebar)
     function toggleSidebar() {
       document.getElementById('sidebarMenu').classList.toggle('active');
       document.getElementById('sidebarOverlay').classList.toggle('active');
     }
 
-    // เมนูควบคุมการแสดงผลของระบบ
     function openCreateAssignmentModal() {
       toggleSidebar();
       const modal = new bootstrap.Modal(document.getElementById('createAssignmentModal'));
       modal.show();
     }
 
-    function switchTeacherView(view) {
-      toggleSidebar();
-      // อนาคตหากเพิ่มเมนู สามารถเขียนโค้ดสลับหน้าตรงนี้ได้เลยครับ
-    }
-
-    function switchStudentView(view) {
-      toggleSidebar();
-    }
+    function switchTeacherView(view) { toggleSidebar(); }
+    function switchStudentView(view) { toggleSidebar(); }
 
     async function callBackend(data) {
       const response = await fetch(BACKEND_URL, {
@@ -373,8 +376,10 @@
       return await response.json();
     }
 
+    // แก้ไขเรื่องที่ 1: ระบบล็อกอินแบบใหม่ เสถียรและทำงานได้ทุกเบราว์เซอร์
     function handleLogin() {
-      initAudioContext(); // ปลดล็อกเสียงทันทีเมื่อมีการปฏิสัมพันธ์ปุ่มกด
+      const btn = document.getElementById('loginBtn');
+      const errorDiv = document.getElementById('loginError');
       
       const user = document.getElementById('username').value.trim();
       const pass = document.getElementById('password').value.trim();
@@ -384,14 +389,19 @@
         return; 
       }
       
+      btn.disabled = true;
+      errorDiv.innerText = "กำลังเชื่อมต่อกับฐานข้อมูล...";
+      
+      // ปลดล็อก AudioContext ผ่านการกดปุ่มโดยตรงอย่างถูกต้องตามมาตรฐานเบราว์เซอร์
+      try { initAudioContext(); } catch(e) {}
+
       const role = document.querySelector('input[name="roleSelect"]:checked').value;
-      document.getElementById('loginError').innerText = "กำลังเชื่อมต่อกับฐานข้อมูล...";
 
       if (role === "teacher") {
         callBackend({ action: "checkLogin", username: user, password: pass }).then(response => {
+          btn.disabled = false;
           if(response.success) {
             currentTeacherId = response.teacherId;
-            // เรื่องที่ 2: แสดงสถานะมุมขวาบน ครู: ชื่อ นามสกุล
             document.getElementById('userStatusTxt').innerText = "ครู: " + response.teacherName;
             document.getElementById('teacherMenuItems').classList.remove('hidden');
             document.getElementById('studentMenuItems').classList.add('hidden');
@@ -401,16 +411,17 @@
             document.getElementById('teacherSection').classList.remove('hidden');
             loadAssignments();
           } else { 
-            document.getElementById('loginError').innerText = response.message; 
+            errorDiv.innerText = response.message; 
           }
         }).catch(e => { 
-          document.getElementById('loginError').innerText = "เชื่อมต่อระบบล้มเหลว กรุณาลองอีกครั้ง"; 
+          btn.disabled = false;
+          errorDiv.innerText = "การเชื่อมต่อล้มเหลว โปรดตรวจสอบสัญญาณอินเทอร์เน็ต"; 
         });
       } else {
         callBackend({ action: "studentLogin", username: user, password: pass }).then(response => {
+          btn.disabled = false;
           if(response.success) {
             currentStudentId = response.studentId;
-            // เรื่องที่ 3: แสดงสถานะมุมขวาบน นักเรียน: คำนำหน้า ชื่อ นามสกุล
             document.getElementById('userStatusTxt').innerText = "นักเรียน: " + response.studentName;
             document.getElementById('teacherMenuItems').classList.add('hidden');
             document.getElementById('studentMenuItems').classList.remove('hidden');
@@ -420,10 +431,11 @@
             document.getElementById('studentSection').classList.remove('hidden');
             loadStudentDashboard();
           } else {
-            document.getElementById('loginError').innerText = response.message;
+            errorDiv.innerText = response.message;
           }
         }).catch(e => { 
-          document.getElementById('loginError').innerText = "เชื่อมต่อระบบล้มเหลว กรุณาลองอีกครั้ง"; 
+          btn.disabled = false;
+          errorDiv.innerText = "การเชื่อมต่อล้มเหลว โปรดตรวจสอบสัญญาณอินเทอร์เน็ต"; 
         });
       }
     }
@@ -435,7 +447,7 @@
         assignments.forEach(item => {
           let opt = document.createElement('option'); 
           opt.value = item.id; 
-          opt.innerText = item.name; // ปรับเรื่องที่ 2: ไม่ใส่รหัสงาน ใส่เฉพาะชื่องานใน dropdown
+          opt.innerText = item.name; 
           select.appendChild(opt);
         });
       });
@@ -481,7 +493,6 @@
 
       callBackend({ action: "getStudentDashboard", studentId: currentStudentId }).then(data => {
         if (data.success) {
-          // เรื่องที่ 3: ปรับคำหัวข้อฝั่งนักเรียน
           document.getElementById('stuSubmittedCount').innerText = data.submittedCount;
           document.getElementById('stuMissingCount').innerText = data.missingJobsCount;
           document.getElementById('stuCoinCount').innerText = data.coins + " 🪙";
@@ -496,251 +507,4 @@
             const tr = document.createElement('tr');
             const statusBadge = job.status === "ส่งแล้ว" 
               ? `<span class="badge bg-success" style="font-size:0.95rem;">✔ ส่งแล้ว</span>`
-              : `<span class="badge bg-danger" style="font-size:0.95rem;">❌ ยังไม่ส่ง</span>`;
-
-            tr.innerHTML = `
-              <td><span class="fw-bold">${job.name}</span></td>
-              <td class="text-center">${statusBadge}</td>
-            `;
-            tableBody.appendChild(tr);
-          });
-        }
-      });
-    }
-
-    function startLightningScanner() {
-      const assignmentId = document.getElementById('assignmentSelect').value;
-      if (!assignmentId) { alert("กรุณาเลือกชิ้นงานก่อนกดเปิดกล้องครับ!"); return; }
-
-      initAudioContext();
-
-      videoElement = document.getElementById("hiddenVideo");
-      canvasElement = document.getElementById("previewCanvas");
-      canvasCtx = canvasElement.getContext("2d", { willReadFrequently: true });
-
-      document.getElementById('startCamBtn').classList.add('hidden');
-      document.getElementById('stopCamBtn').classList.remove('hidden');
-      document.getElementById('canvas-container').classList.remove('hidden');
-
-      navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment", width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 60 } }
-      }).then(function(stream) {
-        videoStream = stream;
-        videoElement.srcObject = stream;
-        videoElement.play();
-        animationFrameId = requestAnimationFrame(tickScan);
-      }).catch(function(err) {
-        alert("ไม่สามารถเข้าถึงกล้องหลังได้: " + err);
-        stopLightningScanner();
-      });
-    }
-
-    function tickScan() {
-      if (videoElement && videoElement.readyState === videoElement.HAVE_ENOUGH_DATA) {
-        const vWidth = videoElement.videoWidth;
-        const vHeight = videoElement.videoHeight;
-        canvasElement.width = vWidth;
-        canvasElement.height = vHeight;
-        canvasCtx.drawImage(videoElement, 0, 0, vWidth, vHeight);
-        
-        const roiX = Math.floor(vWidth * 0.15);
-        const roiY = Math.floor(vHeight * 0.15);
-        const roiWidth = Math.floor(vWidth * 0.7);
-        const roiHeight = Math.floor(vHeight * 0.7);
-        
-        const imageData = canvasCtx.getImageData(roiX, roiY, roiWidth, roiHeight);
-        const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" });
-
-        if (code && code.data) {
-          onScanMatched(code.data);
-        }
-      }
-      if (videoStream) {
-        animationFrameId = requestAnimationFrame(tickScan);
-      }
-    }
-
-    function stopLightningScanner() {
-      if (animationFrameId) cancelAnimationFrame(animationFrameId);
-      if (videoStream) {
-        videoStream.getTracks().forEach(track => track.stop());
-        videoStream = null;
-      }
-      document.getElementById('startCamBtn').classList.remove('hidden');
-      document.getElementById('stopCamBtn').classList.add('hidden');
-      document.getElementById('canvas-container').classList.add('hidden');
-    }
-
-    function onScanMatched(decodedText) {
-      const cleanStudentId = String(decodedText).trim();
-      if (isProcessing || cleanStudentId === lastScannedText) return;
-      isProcessing = true;
-      lastScannedText = cleanStudentId;
-
-      const assignmentId = document.getElementById('assignmentSelect').value;
-      const mode = document.querySelector('input[name="scoringMode"]:checked').value;
-
-      if (mode === "default") {
-        sendScoreToBackend(cleanStudentId, assignmentId, null);
-      } else {
-        tempScannedStudentId = cleanStudentId;
-        stopLightningScanner();
-        
-        const stuObj = cachedStudentsDashboard.find(x => x.id === cleanStudentId);
-        const displayName = stuObj ? stuObj.name : "รหัส: " + cleanStudentId;
-        document.getElementById('scoreModalStudentName').innerText = displayName;
-        
-        document.getElementById('scoreInputDisplay').value = "";
-        
-        const scoreModal = new bootstrap.Modal(document.getElementById('customScoreModal'));
-        scoreModal.show();
-      }
-    }
-
-    function pressNum(num) {
-      const display = document.getElementById('scoreInputDisplay');
-      display.value = display.value + num;
-    }
-    function clearScore() {
-      document.getElementById('scoreInputDisplay').value = "";
-    }
-    function backspaceScore() {
-      const display = document.getElementById('scoreInputDisplay');
-      display.value = display.value.slice(0, -1);
-    }
-    function cancelCustomScore() {
-      const scoreModal = bootstrap.Modal.getInstance(document.getElementById('customScoreModal'));
-      if(scoreModal) scoreModal.hide();
-      tempScannedStudentId = "";
-      setTimeout(() => { 
-        lastScannedText = "";
-        isProcessing = false;
-        startLightningScanner();
-      }, 500);
-    }
-
-    function submitCustomScore() {
-      const scoreVal = document.getElementById('scoreInputDisplay').value.trim();
-      if(scoreVal === "") {
-        alert("กรุณาป้อนคะแนนก่อนบันทึกครับ");
-        return;
-      }
-      const scoreModal = bootstrap.Modal.getInstance(document.getElementById('customScoreModal'));
-      if(scoreModal) scoreModal.hide();
-
-      const assignmentId = document.getElementById('assignmentSelect').value;
-      sendScoreToBackend(tempScannedStudentId, assignmentId, scoreVal);
-    }
-
-    function sendScoreToBackend(studentId, assignmentId, score) {
-      callBackend({ 
-        action: "processQrScan", 
-        studentId: studentId, 
-        assignmentId: assignmentId, 
-        teacherId: currentTeacherId,
-        score: score 
-      }).then(result => {
-        const resBox = document.getElementById('resultMessage');
-        resBox.classList.remove('hidden', 'bg-success-custom', 'bg-danger-custom');
-        document.body.classList.remove('scan-success-flash', 'scan-delay-flash');
-
-        if(result.success) {
-          playSuccessSound();
-          resBox.className = "result-box bg-success-custom";
-          resBox.innerHTML = `✔ ${result.message}<br>เลขที่ ${result.student.number} : ${result.student.name}`;
-          document.body.classList.add('scan-success-flash');
-          updateDashboard();
-        } else {
-          playErrorSound();
-          resBox.className = "result-box bg-danger-custom";
-          if(result.status === 'duplicate') {
-            resBox.innerHTML = `❌ ${result.message}<br>เลขที่ ${result.student.number} : ${result.student.name} ส่งแล้ว`;
-          } else {
-            resBox.innerHTML = `❌ ${result.message}`;
-          }
-          document.body.classList.add('scan-delay-flash');
-        }
-
-        if(score !== null) {
-          startLightningScanner();
-        }
-
-        setTimeout(() => {
-          document.body.classList.remove('scan-success-flash', 'scan-delay-flash');
-          isProcessing = false;
-        }, 300);
-
-        setTimeout(() => { if(lastScannedText === studentId) lastScannedText = ""; }, 2000);
-      });
-    }
-
-    function updateDashboard() {
-      const select = document.getElementById('assignmentSelect');
-      const assignmentId = select.value;
-      if (!assignmentId) return;
-      
-      // ดึงข้อความชื่อไฟล์งานมาใส่ในหัวข้อแดชบอร์ด
-      const assignmentName = select.options[select.selectedIndex].text;
-      document.getElementById('dashboardMainTitle').innerText = "การส่งงาน [" + assignmentName + "]";
-
-      callBackend({ action: "getDashboardData", assignmentId: assignmentId }).then(dash => {
-        if(dash.success) {
-          cachedStudentsDashboard = dash.students;
-          const filterSelect = document.getElementById('roomFilterSelect');
-          const lastSelectedRoom = filterSelect.value;
-          
-          const rooms = [...new Set(dash.students.map(item => item.room))].filter(Boolean);
-          rooms.sort();
-
-          filterSelect.innerHTML = '<option value="all">-- แสดงทุกห้อง --</option>';
-          rooms.forEach(room => {
-            let opt = document.createElement('option');
-            opt.value = room;
-            opt.innerText = "ห้อง " + room;
-            filterSelect.appendChild(opt);
-          });
-
-          if(rooms.includes(lastSelectedRoom)) {
-            filterSelect.value = lastSelectedRoom;
-          }
-
-          renderFilteredDashboard();
-        }
-      });
-    }
-
-    function renderFilteredDashboard() {
-      const selectedRoom = document.getElementById('roomFilterSelect').value;
-      
-      const filteredStudents = cachedStudentsDashboard.filter(student => {
-        if (selectedRoom === "all") return true;
-        return student.room === selectedRoom;
-      });
-
-      const submittedCount = filteredStudents.filter(s => s.submitted).length;
-      const missingList = filteredStudents.filter(s => !s.submitted);
-      const missingCount = missingList.length;
-
-      document.getElementById('dashSubmitted').innerText = submittedCount;
-      document.getElementById('dashMissing').innerText = missingCount;
-
-      const listUl = document.getElementById('missingList'); 
-      listUl.innerHTML = "";
-      
-      if(missingList.length === 0) {
-        listUl.innerHTML = '<li class="list-group-item text-success text-center fw-bold">ส่งครบทุกคนแล้วในฟิลเตอร์นี้! 🎉</li>';
-      } else {
-        missingList.forEach(student => {
-          let li = document.createElement('li'); 
-          li.className = "list-group-item text-danger"; 
-          // เรื่องที่ 2: ปรับรูปแบบการแสดงผลเป็น เลขที่ 1 : ชื่อ นามสกุล ห้อง
-          li.innerHTML = `<span>${student.name} ห้อง ${student.room}</span>`;
-          listUl.appendChild(li);
-        });
-      }
-    }
-
-    function logout() { window.location.reload(); }
-  </script>
-</body>
-</html>
+              : `<span class="badge bg-danger" style="font-size:0.95rem;">❌ ยัง
