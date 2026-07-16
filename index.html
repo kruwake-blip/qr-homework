@@ -238,12 +238,12 @@
   </div>
 
   <div class="modal fade" id="scanResultFeedbackModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" style="max-width: 400px;">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
       <div id="modalContentFeedback" class="modal-content text-center p-4">
         <div id="popupIcon" class="popup-status-icon"></div>
-        <h3 id="popupStatusHeader" class="fw-bold mb-2"></h3>
-        <h5 id="popupStudentDetails" class="fw-bold mb-2"></h5>
-        <h5 id="popupStudentRoomInfo" class="fw-bold text-muted"></h5>
+        <h2 id="popupStatusHeader" class="fw-bold mb-3"></h2>
+        <h4 id="popupStudentDetails" class="fw-bold text-dark mb-2"></h4>
+        <h4 id="popupStudentRoomInfo" class="fw-bold text-secondary"></h4>
       </div>
     </div>
   </div>
@@ -297,7 +297,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
-    // 🚨 คุณครูตรวจสอบความถูกต้องของลิงก์ Web App ตรงนี้อีกครั้งนะครับ
+    // 🚨 สลับลิงก์ตรงนี้ให้เป็นลิงก์ Web App ของคุณครูตัวล่าสุดนะครับ 🚨
     const BACKEND_URL = "https://script.google.com/macros/s/AKfycbzuXvt7_gU_PS34AvWmNZ9XSKIx68Gk76yUC7WvMU_8esPHL53hXOHgLxnXcCdY5Oa-/exec";
 
     let currentTeacherId = "";
@@ -595,6 +595,7 @@
       sendScoreToBackend(tempScannedStudentId, assignmentId, scoreVal);
     }
 
+    // 🚨 ฟังก์ชันประมวลผลการสแกนและจัดโครงสร้างคำตามที่ครูกำหนด
     function sendScoreToBackend(studentId, assignmentId, score) {
       if (animationFrameId) cancelAnimationFrame(animationFrameId);
 
@@ -602,126 +603,3 @@
       const iconDiv = document.getElementById('popupIcon');
       const headerTxt = document.getElementById('popupStatusHeader');
       const detailsTxt = document.getElementById('popupStudentDetails');
-      const roomInfoTxt = document.getElementById('popupStudentRoomInfo');
-
-      modalContent.className = "modal-content text-center p-4 modal-content-processing";
-      document.body.classList.remove('scan-bg-success', 'scan-bg-danger');
-      iconDiv.innerHTML = '<div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;"></div>';
-      headerTxt.innerText = "กำลังประมวลผล...";
-      headerTxt.className = "fw-bold mb-2 text-primary";
-      detailsTxt.innerText = "กำลังส่งข้อมูลลง Google Sheets";
-      roomInfoTxt.innerText = "";
-
-      if(!bsFeedbackModal) bsFeedbackModal = new bootstrap.Modal(document.getElementById('scanResultFeedbackModal'));
-      bsFeedbackModal.show();
-
-      callBackend({ 
-        action: "processQrScan", studentId: studentId, assignmentId: assignmentId, teacherId: currentTeacherId, score: score 
-      }).then(result => {
-        modalContent.classList.remove('modal-content-processing');
-        
-        // ดึงข้อมูลฝั่งนักเรียนจากที่ส่งคืนมาจากหลังบ้าน
-        const sName = result.student.name || "";
-        const sSurname = result.student.surname || "";
-        const sRoom = result.student.room || "-";
-        const sNumber = result.student.number || "-";
-
-        if(result.success) {
-          playSuccessSound();
-          modalContent.classList.add('modal-content-success');
-          document.body.classList.add('scan-bg-success');
-          iconDiv.innerHTML = '<i class="fa-solid fa-circle-check text-success"></i>';
-          
-          headerTxt.innerText = "บันทึกสำเร็จ !";
-          headerTxt.className = "fw-bold mb-2 text-success";
-          detailsTxt.innerText = sName + " " + sSurname;
-          roomInfoTxt.innerText = "ห้อง " + sRoom + " " + sNumber;
-          updateDashboard();
-        } else {
-          playErrorSound();
-          modalContent.classList.add('modal-content-danger');
-          document.body.classList.add('scan-bg-danger');
-          iconDiv.innerHTML = '<i class="fa-solid fa-circle-xmark text-danger"></i>';
-          
-          if(result.status === 'duplicate') {
-            headerTxt.innerText = "นักเรียนส่งงานนี้แล้ว !";
-            detailsTxt.innerText = sName + " " + sSurname;
-            roomInfoTxt.innerText = "ห้อง " + sRoom + " " + sNumber;
-          } else {
-            headerTxt.innerText = "บันทึกไม่สำเร็จ";
-            detailsTxt.innerText = result.message;
-            roomInfoTxt.innerText = "";
-          }
-          headerTxt.className = "fw-bold mb-2 text-danger";
-        }
-        setTimeout(() => {
-          bsFeedbackModal.hide();
-          document.body.classList.remove('scan-bg-success', 'scan-bg-danger');
-          setTimeout(() => {
-            isProcessing = false; lastScannedText = "";
-            if (videoStream) animationFrameId = requestAnimationFrame(tickScan); else startLightningScanner();
-          }, 500);
-        }, 3000);
-      }).catch(err => {
-        modalContent.className = "modal-content text-center p-4 modal-content-danger";
-        iconDiv.innerHTML = '<i class="fa-solid fa-triangle-exclamation text-danger"></i>';
-        headerTxt.innerText = "เกิดข้อผิดพลาด";
-        headerTxt.className = "fw-bold mb-2 text-danger";
-        detailsTxt.innerText = "เชื่อมต่อล้มเหลว: " + err.message;
-        roomInfoTxt.innerText = "";
-        setTimeout(() => {
-          bsFeedbackModal.hide(); isProcessing = false; lastScannedText = "";
-          if(videoStream) animationFrameId = requestAnimationFrame(tickScan);
-        }, 3000);
-      });
-    }
-
-    function updateDashboard() {
-      const select = document.getElementById('assignmentSelect');
-      const assignmentId = select.value;
-      if (!assignmentId) return;
-      document.getElementById('dashboardMainTitle').innerText = "การส่งงาน [" + select.options[select.selectedIndex].text + "]";
-
-      callBackend({ action: "getDashboardData", assignmentId: assignmentId }).then(dash => {
-        if(dash.success) {
-          cachedStudentsDashboard = dash.students;
-          const filterSelect = document.getElementById('roomFilterSelect');
-          const lastSelectedRoom = filterSelect.value;
-          const rooms = [...new Set(dash.students.map(item => item.room))].filter(Boolean).sort();
-
-          filterSelect.innerHTML = '<option value="all">-- แสดงทุกห้อง --</option>';
-          rooms.forEach(room => {
-            let opt = document.createElement('option'); opt.value = room; opt.innerText = "ห้อง " + room;
-            filterSelect.appendChild(opt);
-          });
-          if(rooms.includes(lastSelectedRoom)) filterSelect.value = lastSelectedRoom;
-          renderFilteredDashboard();
-        }
-      }).catch(e => console.error(e));
-    }
-
-    function renderFilteredDashboard() {
-      const selectedRoom = document.getElementById('roomFilterSelect').value;
-      const filteredStudents = cachedStudentsDashboard.filter(student => selectedRoom === "all" || student.room === selectedRoom);
-      const submittedCount = filteredStudents.filter(s => s.submitted).length;
-      const missingList = filteredStudents.filter(s => !s.submitted);
-
-      document.getElementById('dashSubmitted').innerText = submittedCount;
-      document.getElementById('dashMissing').innerText = missingList.length;
-      const listUl = document.getElementById('missingList'); listUl.innerHTML = "";
-      
-      if(missingList.length === 0) {
-        listUl.innerHTML = '<li class="list-group-item text-success text-center fw-bold">ส่งครบทุกคนแล้ว! 🎉</li>';
-      } else {
-        missingList.forEach(student => {
-          let li = document.createElement('li'); li.className = "list-group-item text-danger"; 
-          li.innerHTML = `<span>${student.name} ห้อง ${student.room}</span>`;
-          listUl.appendChild(li);
-        });
-      }
-    }
-
-    function logout() { window.location.reload(); }
-  </script>
-</body>
-</html>
