@@ -8,25 +8,28 @@
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-    body { background-color: #f0f2f5; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; transition: background-color 0.3s ease; padding-top: 56px; }
+    body { background-color: #f0f2f5; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding-top: 56px; }
     .card { border: none; box-shadow: 0 4px 10px rgba(0,0,0,0.08); border-radius: 12px; }
     .hidden { display: none !important; }
-    .top-navbar { position: fixed; top: 0; left: 0; right: 0; height: 56px; background-color: #ffffff; box-shadow: 0 2px 4px rgba(0,0,0,0.05); z-index: 1030; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; }
-    .top-navbar .brand-title { font-weight: bold; color: #0d6efd; font-size: 1.25rem; }
-    .top-navbar .user-status { font-weight: 600; color: #495057; }
-    .sidebar { position: fixed; top: 56px; bottom: 0; left: -260px; width: 260px; background-color: #1e293b; color: #ffffff; transition: left 0.3s ease; z-index: 1040; box-shadow: 4px 0 10px rgba(0,0,0,0.1); padding-top: 10px; }
+    
+    /* แก้ไขเรื่องที่ 2 & 3: ปรับขนาด Navbar ให้เล็กลง กระชับ ไม่ล้นจอมือถือ */
+    .top-navbar { position: fixed; top: 0; left: 0; right: 0; height: 50px; background-color: #ffffff; box-shadow: 0 2px 4px rgba(0,0,0,0.05); z-index: 1030; display: flex; align-items: center; justify-content: space-between; padding: 0 10px; }
+    .top-navbar .brand-title { font-weight: 800; color: #0d6efd; font-size: 1.05rem; white-space: nowrap; }
+    .top-navbar .user-status { font-weight: 600; color: #495057; font-size: 0.85rem; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: right; }
+    
+    .sidebar { position: fixed; top: 50px; bottom: 0; left: -260px; width: 260px; background-color: #1e293b; color: #ffffff; transition: left 0.3s ease; z-index: 1040; box-shadow: 4px 0 10px rgba(0,0,0,0.1); padding-top: 10px; }
     .sidebar.active { left: 0; }
-    .sidebar-overlay { position: fixed; top: 56px; bottom: 0; left: 0; right: 0; background-color: rgba(0,0,0,0.4); z-index: 1035; display: none; }
+    .sidebar-overlay { position: fixed; top: 50px; bottom: 0; left: 0; right: 0; background-color: rgba(0,0,0,0.4); z-index: 1035; display: none; }
     .sidebar-overlay.active { display: block; }
-    .sidebar .menu-item { display: flex; align-items: center; padding: 12px 20px; color: #cbd5e1; text-decoration: none; transition: all 0.2s ease; border-left: 4px solid transparent; cursor: pointer; }
-    .sidebar .menu-item:hover { background-color: #334155; color: #ffffff; border-left-color: #38bdf8; }
+    .sidebar .menu-item { display: flex; align-items: center; padding: 12px 20px; color: #cbd5e1; text-decoration: none; cursor: pointer; }
+    .sidebar .menu-item:hover { background-color: #334155; color: #ffffff; border-left: 4px solid #38bdf8; }
     .sidebar .menu-item i { width: 25px; font-size: 1.1rem; margin-right: 10px; }
-    #canvas-container { width: 100%; max-width: 450px; margin: 0 auto; position: relative; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.15); background: #000; }
+    
+    #canvas-container { width: 100%; max-width: 450px; margin: 0 auto; position: relative; border-radius: 12px; overflow: hidden; background: #000; }
     #previewCanvas { width: 100%; height: auto; display: block; }
-    #hiddenVideo { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
-    .scan-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; border: 4px solid rgba(255, 255, 255, 0.2); }
-    .scan-target-box { position: absolute; top: 15%; left: 15%; width: 70%; height: 70%; border: 3px dashed #0d6efd; border-radius: 8px; box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.4); animation: pulse 1.5s infinite; }
-    @keyframes pulse { 0% { border-color: #0d6efd; } 50% { border-color: #00ff66; } 100% { border-color: #0d6efd; } }
+    #hiddenVideo { position: absolute; width: 1px; height: 1px; opacity: 0; }
+    .scan-target-box { position: absolute; top: 15%; left: 15%; width: 70%; height: 70%; border: 3px dashed #0d6efd; border-radius: 8px; box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.4); }
+    
     body.scan-bg-success { background-color: #a3cfbb !important; }
     body.scan-bg-danger { background-color: #f1aeb5 !important; }
     .calc-btn { height: 55px; font-size: 1.4rem; font-weight: bold; }
@@ -34,60 +37,124 @@
     .modal-content-processing { border: 4px solid #0d6efd; }
     .modal-content-success { border: 4px solid #198754; }
     .modal-content-danger { border: 4px solid #dc3545; }
+
+    /* ==========================================
+       STYLE การ์ดสะสมพลังโปเกม่อน (Pokemon Card Style)
+       ========================================== */
+    .pokemon-card-wrapper { display: flex; justify-content: center; padding: 10px; }
+    .pokemon-card { 
+      width: 100%; max-width: 320px; height: 460px;
+      border: 12px solid #f5b041; border-radius: 18px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+      padding: 12px; display: flex; flex-direction: column;
+      position: relative; overflow: hidden; box-sizing: border-box;
+      font-family: 'Courier New', Courier, monospace, sans-serif;
+    }
+    .card-close-btn {
+      position: absolute; top: 5px; right: 5px; width: 28px; height: 28px;
+      background-color: rgba(255,255,255,0.8); border: 2px solid #333;
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      font-weight: bold; font-size: 14px; cursor: pointer; z-index: 20; color: #000;
+    }
+    
+    /* ธีมสีพื้นหลังตามความหายาก */
+    .bg-rarity-0 { background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%); border-color: #94a3b8; } /* Common */
+    .bg-rarity-1 { background: linear-gradient(135deg, #ebf8ff 0%, #bee3f8 100%); border-color: #3182ce; } /* Rare */
+    .bg-rarity-2 { background: linear-gradient(135deg, #fffaf0 0%, #feebc8 100%); border-color: #dd6b20; } /* Super Rare */
+    .bg-rarity-3 { background: linear-gradient(135deg, #fff5f5 0%, #fed7d7 100%); border-color: #e53e3e; } /* Super Super Rare */
+    .bg-rarity-4 { background: linear-gradient(45deg, #ff9a9e 0%, #fecfef 99%, #fecfef 100%); border-color: #d63384; animation: holo 3s infinite linear; } /* Secret */
+    .bg-rarity-5 { background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%); border-color: #e2e8f0; } /* Legendary */
+
+    @keyframes holo { 0% { filter: hue-rotate(0deg); } 100% { filter: hue-rotate(360deg); } }
+
+    /* สีชื่อการ์ดแยกตามระดับ */
+    .title-rarity-0 { color: #000000; text-shadow: 1px 1px 1px rgba(255,255,255,0.6); }
+    .title-rarity-1 { color: #0044cc; font-weight: bold; text-shadow: 1px 1px 2px #fff; }
+    .title-rarity-2 { color: #ff6600; font-weight: bold; text-shadow: 1px 1px 2px #000; }
+    .title-rarity-3 { color: #cc0000; font-weight: bold; text-shadow: 1px 1px 3px rgba(255,255,0,0.8); }
+    .title-rarity-4 { color: #fff; font-weight: 900; text-shadow: 2px 2px 4px #000, 0 0 10px #ff00ff; background: linear-gradient(to right, #ff007f, #7f00ff, #00ffff, #ff007f); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .title-rarity-5 { color: #ffffff; font-weight: bold; text-shadow: 0 0 8px #fff, 0 0 15px #ffea00; }
+
+    .card-header-area { display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.6); padding: 4px 8px; border-radius: 6px; border: 1px solid rgba(0,0,0,0.15); margin-bottom: 4px; }
+    .card-title-text { font-size: 0.95rem; font-weight: bold; margin: 0; }
+    
+    .card-level-area { font-size: 0.75rem; font-weight: bold; color: #4a5568; margin-bottom: 4px; padding-left: 4px; }
+    .star-icon { color: #f6e05e; text-shadow: 1px 1px 1px #000; margin-left: 1px; }
+
+    .card-image-screen { width: 100%; height: 180px; background-color: #fff; border: 4px solid #cbd5e1; border-radius: 4px; box-shadow: inset 0 0 10px rgba(0,0,0,0.2); overflow: hidden; display: flex; justify-content: center; align-items: center; margin-bottom: 8px; }
+    .card-image-screen img { width: 100%; height: 100%; object-fit: cover; }
+
+    .card-detail-box { flex-grow: 1; background: #fffde7; border: 2px dashed #bcaaa4; border-radius: 6px; padding: 8px; font-size: 0.75rem; color: #5d4037; line-height: 1.3; overflow-y: auto; box-shadow: inset 0 2px 4px rgba(0,0,0,0.05); }
+
+    /* การจัดรูปแบบแถวรายการการ์ดพลังด้านล่าง */
+    .card-list-row { background: #fff; border-radius: 8px; padding: 10px 15px; margin-bottom: 8px; border-left: 6px solid #6c757d; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: transform 0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+    .card-list-row:hover { transform: scale(1.01); background: #f8f9fa; }
+
+    /* เอฟเฟกต์การสุ่มกาชาอลังการ */
+    .gacha-anim-box { position: relative; width: 100%; height: 260px; display: flex; justify-content: center; align-items: center; overflow: hidden; }
+    .gacha-beam { position: absolute; width: 10px; height: 10px; border-radius: 50%; animation: blast 1.8s ease-out forwards; }
+    @keyframes blast {
+      0% { transform: scale(1); box-shadow: 0 0 20px #ffea00, 0 0 40px #ffea00; background: #fff; opacity: 1; }
+      40% { transform: scale(15); box-shadow: 0 0 40px #00ffff, 0 0 80px #ff00ff; background: transparent; opacity: 1; }
+      70% { transform: scale(35); opacity: 0.5; filter: blur(5px); }
+      100% { transform: scale(50); opacity: 0; }
+    }
   </style>
 </head>
 <body>
 
+  <!-- แถบหัวข้อด้านบน -->
   <div id="topNavbar" class="top-navbar hidden">
-    <button type="button" class="btn btn-outline-secondary border-0" onclick="toggleSidebar()">
+    <button type="button" class="btn btn-outline-secondary border-0 p-1" onclick="toggleSidebar()">
       <i class="fa-solid fa-bars fa-lg"></i>
     </button>
     <div class="brand-title">ระบบ QR Homework</div>
     <div id="userStatusTxt" class="user-status">กำลังโหลด...</div>
   </div>
 
+  <!-- แถบเมนูด้านซ้าย -->
   <div id="sidebarOverlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
   <div id="sidebarMenu" class="sidebar">
     <div id="teacherMenuItems">
-      <div class="menu-item" onclick="toggleSidebar()"><i class="fa-solid fa-qrcode"></i> ตรวจและสแกนงาน</div>
+      <div class="menu-item" onclick="switchTab('scanTab')"><i class="fa-solid fa-qrcode"></i> ตรวจและสแกนงาน</div>
       <div class="menu-item" onclick="openCreateAssignmentModal()"><i class="fa-solid fa-square-plus"></i> สร้างชิ้นงาน</div>
     </div>
     <div id="studentMenuItems" class="hidden">
-      <div class="menu-item" onclick="toggleSidebar()"><i class="fa-solid fa-chart-simple"></i> แผงควบคุมและงาน</div>
+      <div class="menu-item" onclick="switchTab('studentDashTab')"><i class="fa-solid fa-chart-simple"></i> แผงควบคุมและงาน</div>
+      <div class="menu-item" onclick="switchTab('studentCardTab')"><i class="fa-solid fa-id-card"></i> สะสมการ์ดพลัง</div>
     </div>
     <hr style="border-color: #475569;">
     <div class="menu-item text-danger" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> ออกจากระบบ</div>
   </div>
 
-  <div class="container py-4">
+  <div class="container py-3">
+    <!-- หน้าแรก (Login Screen) -->
     <div id="loginSection" class="row justify-content-center">
       <div class="col-md-5">
-        <div class="card p-4 mt-5">
-          <h3 class="text-center mb-4 text-primary fw-bold">ระบบ QR Homework</h3>
-          <p class="text-center text-muted fw-bold">เลือกประเภทผู้ใช้งาน: ครู / นักเรียน</p>
-          
-          <div class="btn-group w-100 mb-4" role="group">
+        <div class="card p-4 mt-4">
+          <h3 class="text-center mb-3 text-primary fw-bold" style="font-size: 1.6rem;">ระบบ QR Homework</h3>
+          <p class="text-center text-muted fw-bold small">เลือกประเภทผู้ใช้งาน</p>
+          <div class="btn-group w-100 mb-4">
             <input type="radio" class="btn-check" name="roleSelect" id="roleTeacher" value="teacher" checked>
             <label class="btn btn-outline-primary py-2" for="roleTeacher">👨‍🏫 ครู</label>
             <input type="radio" class="btn-check" name="roleSelect" id="roleStudent" value="student">
             <label class="btn btn-outline-primary py-2" for="roleStudent">🎓 นักเรียน</label>
           </div>
-
           <div class="mb-3">
-            <label class="form-label">ชื่อผู้ใช้ (Username)</label>
-            <input type="text" id="username" class="form-control" placeholder="กรอกชื่อผู้ใช้">
+            <label class="form-label small fw-bold">ชื่อผู้ใช้ (Username)</label>
+            <input type="text" id="username" class="form-control">
           </div>
           <div class="mb-3">
-            <label class="form-label">รหัสผ่าน (Password)</label>
-            <input type="password" id="password" class="form-control" placeholder="กรอกรหัสผ่าน">
+            <label class="form-label small fw-bold">รหัสผ่าน (Password)</label>
+            <input type="password" id="password" class="form-control">
           </div>
-          
-          <button type="button" id="loginBtn" onclick="handleLoginDirectly()" class="btn btn-primary w-100 py-2 mb-2 fw-bold">เข้าสู่ระบบ</button>
-          <div id="loginError" class="text-danger text-center mt-3 fw-bold" style="font-size: 1.1rem;"></div>
+          <button type="button" id="loginBtn" onclick="handleLoginDirectly()" class="btn btn-primary w-100 py-2 fw-bold">เข้าสู่ระบบ</button>
+          <div id="loginError" class="text-danger text-center mt-3 fw-bold small"></div>
         </div>
       </div>
     </div>
 
+    <!-- ส่วนของคุณครู -->
     <div id="teacherSection" class="row justify-content-center hidden">
       <div class="col-md-6 mb-4">
         <div class="card p-4 mb-4">
@@ -95,121 +162,115 @@
           <select id="assignmentSelect" class="form-select form-select-lg mb-3" onchange="updateDashboard()">
             <option value="">-- กรุณาเลือกชิ้นงาน --</option>
           </select>
-
           <div class="mb-4">
-            <label class="form-label fw-bold text-secondary">รูปแบบการให้คะแนน:</label>
-            <div class="btn-group w-100" role="group">
+            <label class="form-label fw-bold text-secondary small">รูปแบบการให้คะแนน:</label>
+            <div class="btn-group w-100">
               <input type="radio" class="btn-check" name="scoringMode" id="scoreDefault" value="default" checked>
               <label class="btn btn-outline-primary" for="scoreDefault">🏆 คะแนนเต็ม</label>
               <input type="radio" class="btn-check" name="scoringMode" id="scoreCustom" value="custom">
               <label class="btn btn-outline-primary" for="scoreCustom">✏️ กรอกคะแนน</label>
             </div>
           </div>
-
-          <div class="text-center mb-3">
-            <button type="button" id="startCamBtn" onclick="startLightningScanner()" class="btn btn-success btn-lg w-100 py-3 mb-2 fw-bold"><i class="fa-solid fa-camera"></i> เปิดกล้อง</button>
-            <button type="button" id="stopCamBtn" onclick="stopLightningScanner()" class="btn btn-danger w-100 mb-2 hidden">ปิดกล้อง</button>
-          </div>
+          <button type="button" id="startCamBtn" onclick="startLightningScanner()" class="btn btn-success btn-lg w-100 py-3 fw-bold"><i class="fa-solid fa-camera"></i> เปิดกล้องสแกน</button>
+          <button type="button" id="stopCamBtn" onclick="stopLightningScanner()" class="btn btn-danger w-100 mb-2 hidden">ปิดกล้อง</button>
           
-          <div id="canvas-container" class="hidden">
+          <div id="canvas-container" class="hidden mt-3">
             <video id="hiddenVideo" autoplay muted playsinline></video>
             <canvas id="previewCanvas"></canvas>
-            <div class="scan-overlay">
-              <div class="scan-target-box"></div>
-            </div>
+            <div class="scan-target-box"></div>
           </div>
         </div>
       </div>
-
       <div class="col-md-6">
         <div class="card p-4">
           <h5 class="card-title mb-3 text-primary fw-bold" id="dashboardMainTitle">การส่งงาน</h5>
-          
           <div class="mb-3">
-            <label class="form-label fw-bold text-secondary">เลือกห้องเรียน:</label>
             <select id="roomFilterSelect" class="form-select" onchange="renderFilteredDashboard()">
               <option value="all">-- แสดงทุกห้อง --</option>
             </select>
           </div>
-
           <div class="row text-center mb-3">
-            <div class="col-6">
-              <div class="bg-success bg-opacity-10 p-3 rounded border border-success">
-                <h6>ส่งแล้ว (คน)</h6>
-                <h3 id="dashSubmitted" class="text-success fw-bold">0</h3>
-              </div>
-            </div>
-            <div class="col-6">
-              <div class="bg-danger bg-opacity-10 p-3 rounded border border-danger">
-                <h6>ยังไม่ส่ง (คน)</h6>
-                <h3 id="dashMissing" class="text-danger fw-bold">0</h3>
-              </div>
-            </div>
+            <div class="col-6"><div class="bg-success bg-opacity-10 p-2 rounded border border-success"><small>ส่งแล้ว</small><h4 id="dashSubmitted" class="text-success fw-bold mb-0">0</h4></div></div>
+            <div class="col-6"><div class="bg-danger bg-opacity-10 p-2 rounded border border-danger"><small>ยังไม่ส่ง</small><h4 id="dashMissing" class="text-danger fw-bold mb-0">0</h4></div></div>
           </div>
-          <h6 class="fw-bold">รายชื่อนักเรียนที่ยังไม่ส่ง:</h6>
+          <h6 class="fw-bold small">รายชื่อนักเรียนที่ยังไม่ส่ง:</h6>
           <ul id="missingList" class="list-group" style="max-height: 250px; overflow-y: auto;">
-            <li class="list-group-item text-muted text-center">กรุณาเลือกงานเพื่อดูรายชื่อ</li>
+            <li class="list-group-item text-muted text-center small">กรุณาเลือกงานเพื่อดูรายชื่อ</li>
           </ul>
         </div>
       </div>
     </div>
 
+    <!-- ส่วนของนักเรียน: แท็บส่งงานปกติ -->
     <div id="studentSection" class="row justify-content-center hidden">
-      <div class="col-md-9">
+      <div class="col-md-9" id="studentDashTab">
         <div class="row mb-4 text-center">
-          <div class="col-md-4 mb-3">
-            <div class="card p-3 bg-success text-white h-100">
-              <h6>✔ จำนวนงานที่ส่งแล้ว</h6>
-              <h2 id="stuSubmittedCount" class="fw-bold mt-2">0</h2>
-            </div>
-          </div>
-          <div class="col-md-4 mb-3">
-            <div class="card p-3 bg-warning text-dark h-100">
-              <h6>⚠️ จำนวนงานที่ยังไม่ส่ง</h6>
-              <h2 id="stuMissingCount" class="fw-bold mt-2 text-danger">0</h2>
-            </div>
-          </div>
-          <div class="col-md-4 mb-3">
-            <div class="card p-3 bg-info text-dark h-100" style="background-color: #e0f7fa !important; border: 2px solid #00acc1;">
-              <h6 class="fw-bold text-dark">🪙 Coins ที่สะสมได้</h6>
-              <h2 id="stuCoinCount" class="fw-bold mt-2 text-primary">0</h2>
-            </div>
-          </div>
+          <div class="col-4 px-1"><div class="card p-2 bg-success text-white"><h6>ส่งแล้ว</h6><h3 id="stuSubmittedCount" class="fw-bold">0</h3></div></div>
+          <div class="col-4 px-1"><div class="card p-2 bg-warning text-dark"><h6>ยังไม่ส่ง</h6><h3 id="stuMissingCount" class="fw-bold text-danger">0</h3></div></div>
+          <div class="col-4 px-1"><div class="card p-2 bg-info text-dark" style="background-color: #e0f7fa !important; border: 2px solid #00acc1;"><h6>Coins</h6><h3 id="stuCoinCount" class="fw-bold text-primary">0</h3></div></div>
         </div>
-
         <div class="card p-4">
           <h5 class="card-title mb-3 text-primary fw-bold">📝 สถานะการส่งภารกิจ</h5>
           <div class="table-responsive">
             <table class="table table-hover">
-              <thead class="table-light">
-                <tr>
-                  <th>ชื่องาน (Assignment)</th>
-                  <th class="text-center" style="width: 150px;">สถานะการตรวจสอบ</th>
-                </tr>
-              </thead>
-              <tbody id="studentJobsTableBody">
-                <tr>
-                  <td colspan="2" class="text-center text-muted">กำลังดึงข้อมูล...</td>
-                </tr>
-              </tbody>
+              <thead class="table-light"><tr><th>ชื่องาน</th><th class="text-center" style="width: 120px;">สถานะ</th></tr></thead>
+              <tbody id="studentJobsTableBody"></tbody>
             </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ส่วนของนักเรียน: แท็บสะสมการ์ดพลังใหม่ -->
+      <div class="col-md-9 hidden" id="studentCardTab">
+        <div class="card p-4 text-center mb-4">
+          <h4 class="fw-bold text-primary mb-3">🔮 สมุดสะสมการ์ดพลัง</h4>
+          <div class="d-flex justify-content-around align-items-center bg-light p-3 rounded mb-3 border">
+            <div><span class="text-secondary fw-bold">การ์ดทั้งหมดที่มี:</span> <h3 id="totalCardsOwned" class="d-inline fw-bold text-dark">0</h3> ใบ</div>
+            <div><span class="text-secondary fw-bold">เหรียญคงเหลือ:</span> <h3 id="gachaCoinCount" class="d-inline fw-bold text-primary">0</h3> 🪙</div>
+          </div>
+          <button type="button" onclick="triggerGachaDraw()" class="btn btn-warning btn-lg w-100 py-3 fw-bold shadow-sm" style="font-size: 1.3rem;"><i class="fa-solid fa-box-open"></i> สุ่มการ์ดพลัง (ใช้ 1 Coin)</button>
+        </div>
+
+        <div class="card p-4">
+          <h5 class="fw-bold text-secondary mb-3"><i class="fa-solid fa-briefcase"></i> กระเป๋าสะสมการ์ดของคุณ</h5>
+          <div id="studentCardsCollectionContainer">
+            <p class="text-center text-muted">ยังไม่มีการ์ดพลังในกระเป๋า ออกไปส่งงานเพื่อรับ Coin มาสุ่มกันเลย!</p>
           </div>
         </div>
       </div>
     </div>
   </div>
 
+  <!-- POPUP MODAL: สุ่มกาชาอลังการ -->
+  <div class="modal fade" id="gachaAnimationModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content bg-dark text-white text-center p-3 border-0">
+        <div id="gachaAnimBody" class="gacha-anim-box">
+          <div class="gacha-beam"></div>
+          <h2 class="fw-bold text-warning animate-pulse" style="z-index: 10;">กำลังเปิดซองการ์ด...</h2>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- POPUP MODAL: แสดงรายละเอียดการ์ดโปเกม่อน -->
+  <div class="modal fade" id="pokemonCardDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 350px;">
+      <div id="pokemonCardInjectArea"></div>
+    </div>
+  </div>
+
+  <!-- POPUP MODAL: เครื่องคิดเลขคะแนนคุณครู -->
   <div class="modal fade" id="customScoreModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered" style="max-width: 380px;">
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title text-primary fw-bold">✏️ สแกนพบรหัส! กรอกคะแนน</h5>
-          <button type="button" class="btn-close" onclick="cancelCustomScore()" aria-label="Close"></button>
+          <button type="button" class="btn-close" onclick="cancelCustomScore()"></button>
         </div>
         <div class="modal-body text-center">
           <h6 id="scoreModalStudentName" class="mb-3 text-success fw-bold">นักเรียน</h6>
-          <input type="text" id="scoreInputDisplay" class="form-control form-control-lg text-center mb-3" readonly style="font-size: 2rem; font-weight: bold; background-color: #fff;">
-          
+          <input type="text" id="scoreInputDisplay" class="form-control form-control-lg text-center mb-3" readonly style="font-size: 2rem; font-weight: bold;">
           <div class="row g-2 mb-3">
             <div class="col-4"><button type="button" onclick="pressNum(1)" class="btn btn-outline-secondary w-100 calc-btn">1</button></div>
             <div class="col-4"><button type="button" onclick="pressNum(2)" class="btn btn-outline-secondary w-100 calc-btn">2</button></div>
@@ -224,7 +285,6 @@
             <div class="col-4"><button type="button" onclick="pressNum(0)" class="btn btn-outline-secondary w-100 calc-btn">0</button></div>
             <div class="col-4"><button type="button" onclick="backspaceScore()" class="btn btn-secondary w-100 calc-btn">⌫</button></div>
           </div>
-          
           <div class="d-flex gap-2">
             <button type="button" onclick="cancelCustomScore()" class="btn btn-outline-danger w-100 py-2">ยกเลิก</button>
             <button type="button" onclick="submitCustomScore()" class="btn btn-primary w-100 py-2">💾 บันทึกคะแนน</button>
@@ -234,6 +294,7 @@
     </div>
   </div>
 
+  <!-- POPUP MODAL แจ้งเตือนผลลัพธ์การสแกน -->
   <div class="modal fade" id="scanResultFeedbackModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
       <div id="modalContentFeedback" class="modal-content text-center p-4">
@@ -245,120 +306,58 @@
     </div>
   </div>
 
+  <!-- POPUP MODAL: เมนูสร้างชิ้นงานใหม่ -->
   <div class="modal fade" id="createAssignmentModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title text-primary fw-bold">➕ เพิ่มชิ้นงานใหม่</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
+    <div class="modal-dialog"><div class="modal-content">
+        <div class="modal-header"><h5 class="modal-title text-primary fw-bold">➕ เพิ่มชิ้นงานใหม่</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
         <div class="modal-body">
-          <div class="mb-3">
-            <label class="form-label fw-bold">ชื่องาน (Assignment Name)</label>
-            <input type="text" id="newAssignName" class="form-control" placeholder="เช่น ใบงานที่ 1">
-          </div>
-          <div class="mb-3">
-            <label class="form-label fw-bold">เดือนที่สั่ง (Assign Month)</label>
-            <select id="newAssignDate" class="form-select">
-              <option value="มกราคม">มกราคม</option><option value="กุมภาพันธ์">กุมภาพันธ์</option>
-              <option value="มีนาคม">มีนาคม</option><option value="เมษายน">เมษายน</option>
-              <option value="พฤษภาคม">พฤษภาคม</option><option value="มิถุนายน">มิถุนายน</option>
-              <option value="กรกฎาคม">กรกฎาคม</option><option value="สิงหาคม">สิงหาคม</option>
-              <option value="กันยายน">กันยายน</option><option value="ตุลาคม">ตุลาคม</option>
-              <option value="พฤศจิกายน">พฤศจิกายน</option><option value="ธันวาคม">ธันวาคม</option>
-            </select>
-          </div>
-          <div class="mb-3">
-            <label class="form-label fw-bold">กำหนดส่งเดือน (Due Month)</label>
-            <select id="newDueDate" class="form-select">
-              <option value="มกราคม">มกราคม</option><option value="กุมภาพันธ์">กุมภาพันธ์</option>
-              <option value="มีนาคม">มีนาคม</option><option value="เมษายน">เมษายน</option>
-              <option value="พฤษภาคม">พฤษภาคม</option><option value="มิถุนายน">มิถุนายน</option>
-              <option value="กรกฎาคม">กรกฎาคม</option><option value="สิงหาคม">สิงหาคม</option>
-              <option value="กันยายน">กันยายน</option><option value="ตุลาคม">ตุลาคม</option>
-              <option value="พฤศจิกายน">พฤศจิกายน</option><option value="ธันวาคม">ธันวาคม</option>
-            </select>
-          </div>
-          <div class="mb-3">
-            <label class="form-label fw-bold">คะแนนเต็มประจำงาน (Points)</label>
-            <input type="number" id="newAssignPoint" class="form-control" placeholder="เช่น 10" min="0">
-          </div>
+          <div class="mb-3"><label class="form-label fw-bold">ชื่องาน</label><input type="text" id="newAssignName" class="form-control"></div>
+          <div class="mb-3"><label class="form-label fw-bold">เดือนที่สั่ง</label><select id="newAssignDate" class="form-select"><option value="มกราคม">มกราคม</option><option value="กุมภาพันธ์">กุมภาพันธ์</option><option value="มีนาคม">มีนาคม</option><option value="เมษายน">เมษายน</option><option value="พฤษภาคม">พฤษภาคม</option><option value="มิถุนายน">มิถุนายน</option><option value="กรกฎาคม">กรกฎาคม</option><option value="สิงหาคม">สิงหาคม</option><option value="กันยายน">กันยายน</option><option value="ตุลาคม">ตุลาคม</option><option value="พฤศจิกายน">พฤศจิกายน</option><option value="ธันวาคม">ธันวาคม</option></select></div>
+          <div class="mb-3"><label class="form-label fw-bold">กำหนดส่ง</label><select id="newDueDate" class="form-select"><option value="มกราคม">มกราคม</option><option value="กุมภาพันธ์">กุมภาพันธ์</option><option value="มีนาคม">มีนาคม</option><option value="เมษายน">เมษายน</option><option value="พฤษภาคม">พฤษภาคม</option><option value="มิถุนายน">มิถุนายน</option><option value="กรกฎาคม">กรกฎาคม</option><option value="สิงหาคม">สิงหาคม</option><option value="กันยายน">กันยายน</option><option value="ตุลาคม">ตุลาคม</option><option value="พฤศจิกายน">พฤศจิกายน</option><option value="ธันวาคม">ธันวาคม</option></select></div>
+          <div class="mb-3"><label class="form-label fw-bold">คะแนนเต็ม</label><input type="number" id="newAssignPoint" class="form-control" min="0"></div>
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
-          <button type="button" onclick="submitNewAssignment()" class="btn btn-primary">บันทึกข้อมูลงาน</button>
-        </div>
-      </div>
-    </div>
+        <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button><button type="button" onclick="submitNewAssignment()" class="btn btn-primary">บันทึกข้อมูลงาน</button></div>
+    </div></div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
-    // กรุณาเปลี่ยนตัวแปรนี้ให้เป็น Web App URL ของคุณครูทุกครั้งหลังจากทำการ Deploy เวอร์ชันใหม่
+    // ⚠️ อย่าลืมอัปเดต Web App URL ของคุณครูที่นี่นะครับ
     const BACKEND_URL = "https://script.google.com/macros/s/AKfycbzuXvt7_gU_PS34AvWmNZ9XSKIx68Gk76yUC7WvMU_8esPHL53hXOHgLxnXcCdY5Oa-/exec";
 
-    let currentTeacherId = "";
-    let currentStudentId = "";
-    let isProcessing = false;
-    let lastScannedText = "";
-    let videoStream = null;
-    let animationFrameId = null;
-    let videoElement, canvasElement, canvasCtx;
-    let tempScannedStudentId = "";
-    let cachedStudentsDashboard = [];
-    let bsFeedbackModal = null;
-    let audioCtx = null;
+    let currentTeacherId = ""; let currentStudentId = ""; let isProcessing = false; let lastScannedText = "";
+    let videoStream = null; let animationFrameId = null; let videoElement, canvasElement, canvasCtx;
+    let tempScannedStudentId = ""; let cachedStudentsDashboard = []; let bsFeedbackModal = null;
+    let globalStudentData = null; // เก็บข้อมูลแคชสำหรับการ์ดพลัง
 
-    function initAudioContext() {
-      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
-    }
-    function playSuccessSound() {
-      try {
-        if (!audioCtx) return;
-        let osc = audioCtx.createOscillator(); let gain = audioCtx.createGain();
-        osc.connect(gain); gain.connect(audioCtx.destination);
-        osc.type = "sine"; osc.frequency.setValueAtTime(1400, audioCtx.currentTime);
-        gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.05);
-        osc.start(); osc.stop(audioCtx.currentTime + 0.05);
-      } catch (e) {}
-    }
-    function playErrorSound() {
-      try {
-        if (!audioCtx) return;
-        let osc = audioCtx.createOscillator(); let gain = audioCtx.createGain();
-        osc.connect(gain); gain.connect(audioCtx.destination);
-        osc.type = "triangle"; osc.frequency.setValueAtTime(180, audioCtx.currentTime);
-        gain.gain.setValueAtTime(0.18, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
-        osc.start(); osc.stop(audioCtx.currentTime + 0.2);
-      } catch (e) {}
-    }
+    const rarityNames = ["Common", "Rare", "Super Rare", "Super Super Rare", "Secret", "Legendary"];
+    const rarityBorderColors = ["#6c757d", "#0d6efd", "#fd7e14", "#dc3545", "#d63384", "#111"];
 
     function toggleSidebar() {
       document.getElementById('sidebarMenu').classList.toggle('active');
       document.getElementById('sidebarOverlay').classList.toggle('active');
     }
-    function openCreateAssignmentModal() {
+
+    function switchTab(tabId) {
       toggleSidebar();
-      new bootstrap.Modal(document.getElementById('createAssignmentModal')).show();
+      if(tabId === 'studentDashTab') {
+        document.getElementById('studentDashTab').classList.remove('hidden');
+        document.getElementById('studentCardTab').classList.add('hidden');
+        loadStudentDashboard();
+      } else if(tabId === 'studentCardTab') {
+        document.getElementById('studentDashTab').classList.add('hidden');
+        document.getElementById('studentCardTab').classList.remove('hidden');
+        loadStudentDashboard(); // โหลดเพื่ออัปเดตกระเป๋าการ์ดล่าสุด
+      }
     }
 
     async function callBackend(data) {
-      try {
-        const response = await fetch(BACKEND_URL, {
-          method: "POST",
-          mode: "cors",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify(data)
-        });
-        if (!response.ok) throw new Error("HTTP Status " + response.status);
-        return await response.json();
-      } catch (err) {
-        console.error("Backend Error:", err);
-        throw err;
-      }
+      const response = await fetch(BACKEND_URL, {
+        method: "POST", mode: "cors",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(data)
+      });
+      return await response.json();
     }
 
     async function handleLoginDirectly() {
@@ -366,176 +365,192 @@
       const errorDiv = document.getElementById('loginError');
       const user = document.getElementById('username').value.trim();
       const pass = document.getElementById('password').value.trim();
+      if(!user || !pass) { alert("กรุณากรอกข้อมูลให้ครบครับ"); return; }
       
-      if(!user || !pass) { 
-        alert("กรุณากรอกชื่อผู้ใช้และรหัสผ่านให้ครบถ้วนครับ"); 
-        return; 
-      }
-      
-      btn.disabled = true;
-      errorDiv.innerText = "กำลังตรวจสอบกับฐานข้อมูล Google Sheets...";
-      
-      const roleSelectElement = document.querySelector('input[name="roleSelect"]:checked');
-      const role = roleSelectElement ? roleSelectElement.value : "teacher";
+      btn.disabled = true; errorDiv.innerText = "กำลังตรวจสอบฐานข้อมูล...";
+      const role = document.querySelector('input[name="roleSelect"]:checked').value;
 
       try {
         if (role === "teacher") {
-          const response = await callBackend({ action: "checkLogin", username: user, password: pass });
+          const res = await callBackend({ action: "checkLogin", username: user, password: pass });
           btn.disabled = false;
-          if(response.success) {
-            currentTeacherId = response.teacherId;
-            document.getElementById('userStatusTxt').innerText = "👨‍🏫 ครู: " + response.teacherName;
-            document.getElementById('teacherMenuItems').classList.remove('hidden');
-            document.getElementById('studentMenuItems').classList.add('hidden');
+          if(res.success) {
+            currentTeacherId = res.teacherId;
+            document.getElementById('userStatusTxt').innerText = "ครู: " + res.teacherName;
             document.getElementById('loginSection').classList.add('hidden');
             document.getElementById('topNavbar').classList.remove('hidden');
             document.getElementById('teacherSection').classList.remove('hidden');
             loadAssignments();
-          } else { 
-            errorDiv.innerText = response.message; 
-          }
+          } else { errorDiv.innerText = res.message; }
         } else {
-          const response = await callBackend({ action: "studentLogin", username: user, password: pass });
+          const res = await callBackend({ action: "studentLogin", username: user, password: pass });
           btn.disabled = false;
-          if(response.success) {
-            currentStudentId = response.studentId;
-            document.getElementById('userStatusTxt').innerText = "🎓 นักเรียน: " + response.studentName;
-            document.getElementById('teacherMenuItems').classList.add('hidden');
-            document.getElementById('studentMenuItems').classList.remove('hidden');
+          if(res.success) {
+            currentStudentId = res.studentId;
+            document.getElementById('userStatusTxt').innerText = "นร: " + res.teacherName; // ใช้แปรตัวเดียวกันส่งมาจากหลังบ้าน
             document.getElementById('loginSection').classList.add('hidden');
             document.getElementById('topNavbar').classList.remove('hidden');
             document.getElementById('studentSection').classList.remove('hidden');
             loadStudentDashboard();
-          } else {
-            errorDiv.innerText = response.message;
-          }
+          } else { errorDiv.innerText = res.message; }
         }
-      } catch (error) {
-        btn.disabled = false;
-        errorDiv.innerText = "การเชื่อมต่อล้มเหลว ค้างที่ฝั่งเซิร์ฟเวอร์ปลายทาง";
-      }
+      } catch (e) { btn.disabled = false; errorDiv.innerText = "การเชื่อมต่อล้มเหลว"; }
     }
 
     function loadAssignments() {
-      callBackend({ action: "getAssignments" }).then(assignments => {
+      callBackend({ action: "getAssignments" }).then(res => {
         const select = document.getElementById('assignmentSelect');
         select.innerHTML = '<option value="">-- กรุณาเลือกชิ้นงาน --</option>';
-        assignments.forEach(item => {
-          let opt = document.createElement('option'); 
-          opt.value = item.id; 
-          opt.innerText = item.name; 
-          select.appendChild(opt);
+        res.forEach(item => {
+          let opt = document.createElement('option'); opt.value = item.id; opt.innerText = item.name; select.appendChild(opt);
         });
-      }).catch(e => alert("โหลดงานล้มเหลว: " + e.message));
-    }
-
-    function submitNewAssignment() {
-      const name = document.getElementById('newAssignName').value;
-      const assignDate = document.getElementById('newAssignDate').value;
-      const dueDate = document.getElementById('newDueDate').value;
-      const points = document.getElementById('newAssignPoint').value;
-
-      if (!name || !points) { alert("กรุณากรอกข้อมูลให้ครบถ้วนครับ!"); return; }
-
-      const modalElement = document.getElementById('createAssignmentModal');
-      const modal = bootstrap.Modal.getInstance(modalElement);
-      
-      callBackend({
-        action: "createAssignment", name: name, assignDate: assignDate, dueDate: dueDate, points: points, teacherId: currentTeacherId
-      }).then(res => {
-        if(res.success) {
-          alert(res.message);
-          modal.hide();
-          document.getElementById('newAssignName').value = "";
-          document.getElementById('newAssignPoint').value = "";
-          loadAssignments();
-        } else {
-          alert("ล้มเหลว: " + res.message);
-        }
-      }).catch(e => alert("สร้างงานไม่สำเร็จ: " + e.message));
+      });
     }
 
     function loadStudentDashboard() {
-      const tableBody = document.getElementById('studentJobsTableBody');
-      tableBody.innerHTML = `<tr><td colspan="2" class="text-center text-muted">กำลังดึงข้อมูล...</td></tr>`;
-
       callBackend({ action: "getStudentDashboard", studentId: currentStudentId }).then(data => {
         if (data.success) {
+          globalStudentData = data;
           document.getElementById('stuSubmittedCount').innerText = data.submittedCount;
           document.getElementById('stuMissingCount').innerText = data.missingJobsCount;
-          document.getElementById('stuCoinCount').innerText = data.coins + " 🪙";
+          document.getElementById('stuCoinCount').innerText = data.coins;
+          
+          // ผูกข้อมูลหน้าจอการ์ด
+          document.getElementById('totalCardsOwned').innerText = data.myCards.length;
+          document.getElementById('gachaCoinCount').innerText = data.coins;
+
+          const tableBody = document.getElementById('studentJobsTableBody');
           tableBody.innerHTML = "";
-          if(data.allJobs.length === 0) {
-            tableBody.innerHTML = `<tr><td colspan="2" class="text-center text-success fw-bold">ยังไม่มีภารกิจงานในระบบขณะนี้ 🎉</td></tr>`;
-            return;
-          }
           data.allJobs.forEach(job => {
             const tr = document.createElement('tr');
-            const statusBadge = job.status === "ส่งแล้ว" 
-              ? `<span class="badge bg-success" style="font-size:0.95rem;">✔ ส่งแล้ว</span>`
-              : `<span class="badge bg-danger" style="font-size:0.95rem;">❌ ยังไม่ส่ง</span>`;
-            tr.innerHTML = `<td><span class="fw-bold">${job.name}</span></td><td class="text-center">${statusBadge}</td>`;
+            const status = job.status === "ส่งแล้ว" ? `<span class="badge bg-success">✔ ส่งแล้ว</span>` : `<span class="badge bg-danger">❌ ยังไม่ส่ง</span>`;
+            tr.innerHTML = `<td><span class="fw-bold small">${job.name}</span></td><td class="text-center">${status}</td>`;
             tableBody.appendChild(tr);
           });
+
+          // เรนเดอร์กระเป๋าการ์ดสะสม (แสดงเป็นบรรทัด สามารถคลิกดูการ์ดโปเกมอนได้)
+          const container = document.getElementById('studentCardsCollectionContainer');
+          container.innerHTML = "";
+          if(data.myCards.length === 0) {
+            container.innerHTML = `<p class="text-center text-muted small py-3">ยังไม่มีการ์ดพลังในกระเป๋า ออกไปส่งงานเพื่อรับ Coin มาสุ่มกันเลย!</p>`;
+            return;
+          }
+          data.myCards.forEach((card, index) => {
+            const row = document.createElement('div');
+            row.className = "card-list-row";
+            row.style.borderLeftColor = rarityBorderColors[card.level] || "#6c757d";
+            row.onclick = () => showPokemonCardDetail(card);
+            row.innerHTML = `
+              <div>
+                <strong class="text-dark small">[${card.id}]</strong> 
+                <span class="fw-bold ms-1" style="font-size:0.9rem;">${card.name}</span>
+              </div>
+              <span class="badge" style="background-color:${rarityBorderColors[card.level]}; font-size:0.75rem;">${rarityNames[card.level]}</span>
+            `;
+            container.appendChild(row);
+          });
         }
-      }).catch(e => alert("โหลดแดชบอร์ดนักเรียนล้มเหลว: " + e.message));
+      });
+    }
+
+    // ฟังก์ชันยิงคำสั่งสุ่มการ์ดพลัง
+    function triggerGachaDraw() {
+      if(globalStudentData && globalStudentData.coins < 1) {
+        alert("คุณมี Coin ไม่เพียงพอ! กรุณาส่งงานเพิ่มเพื่อสะสมเหรียญครับ");
+        return;
+      }
+      
+      const animModal = new bootstrap.Modal(document.getElementById('gachaAnimationModal'));
+      animModal.show();
+
+      callBackend({ action: "drawCardGacha", studentId: currentStudentId }).then(res => {
+        setTimeout(() => {
+          animModal.hide();
+          if(res.success) {
+            loadStudentDashboard(); // โหลดอัปเดตยอดคงเหลือและรายการ
+            showPokemonCardDetail(res.card); // โชว์การ์ดที่สุ่มได้อลังการทันที
+          } else {
+            alert(res.message);
+          }
+        }, 2000); // แสดงเอฟเฟกต์แสงหมุน 2 วินาทีเหมือนเปิดตู้เกมส์
+      }).catch(e => {
+        animModal.hide();
+        alert("ระบบเกิดข้อผิดพลาดในการสุ่มการ์ด");
+      });
+    }
+
+    // ฟังก์ชันสร้างและสร้างหน้าตาการ์ดโปเกม่อนฉบับสมบูรณ์ (Pokemon Card Layout)
+    function showPokemonCardDetail(card) {
+      let starsHTML = "";
+      for (let i = 0; i <= card.level; i++) {
+        starsHTML += '<i class="fa-solid fa-star star-icon"></i>';
+      }
+
+      const cardHtml = `
+        <div class="pokemon-card bg-rarity-${card.level}">
+          <div class="card-close-btn" onclick="closePokemonCardModal()">X</div>
+          
+          <div class="card-header-area">
+            <h6 class="card-title-text title-rarity-${card.level}">${card.id}: ${card.name}</h6>
+          </div>
+          
+          <div class="card-level-area">
+            Level: ${rarityNames[card.level]} ${starsHTML}
+          </div>
+          
+          <div class="card-image-screen">
+            <img src="${card.picture || 'https://via.placeholder.com/300x200?text=No+Image'}" alt="Card Image">
+          </div>
+          
+          <div class="card-detail-box">
+            <strong>[ข้อมูลการ์ดพลัง]:</strong><br>
+            ${card.detail || 'ไม่มีคำอธิบายเพิ่มเติมสำหรับการ์ดใบนี้'}
+          </div>
+        </div>
+      `;
+      document.getElementById('pokemonCardInjectArea').innerHTML = cardHtml;
+      const detailModal = new bootstrap.Modal(document.getElementById('pokemonCardDetailModal'));
+      detailModal.show();
+    }
+
+    function closePokemonCardModal() {
+      const modalEl = document.getElementById('pokemonCardDetailModal');
+      const modal = bootstrap.Modal.getInstance(modalEl);
+      if(modal) modal.hide();
     }
 
     function startLightningScanner() {
       const assignmentId = document.getElementById('assignmentSelect').value;
-      if (!assignmentId) { alert("กรุณาเลือกชิ้นงานก่อนกดเปิดกล้องครับ!"); return; }
-
-      try { initAudioContext(); } catch(e) {}
-
+      if (!assignmentId) { alert("กรุณาเลือกชิ้นงานก่อนครับ"); return; }
       videoElement = document.getElementById("hiddenVideo");
       canvasElement = document.getElementById("previewCanvas");
       canvasCtx = canvasElement.getContext("2d", { willReadFrequently: true });
-
       document.getElementById('startCamBtn').classList.add('hidden');
       document.getElementById('stopCamBtn').classList.remove('hidden');
       document.getElementById('canvas-container').classList.remove('hidden');
 
-      navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment", width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 60 } }
-      }).then(function(stream) {
-        videoStream = stream;
-        videoElement.srcObject = stream;
-        videoElement.play();
+      navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }).then(function(stream) {
+        videoStream = stream; videoElement.srcObject = stream; videoElement.play();
         animationFrameId = requestAnimationFrame(tickScan);
-      }).catch(function(err) {
-        alert("ไม่สามารถเข้าถึงกล้องได้: " + err);
-        stopLightningScanner();
       });
     }
 
     function tickScan() {
       if (videoElement && videoElement.readyState === videoElement.HAVE_ENOUGH_DATA) {
-        const vWidth = videoElement.videoWidth;
-        const vHeight = videoElement.videoHeight;
-        canvasElement.width = vWidth;
-        canvasElement.height = vHeight;
-        canvasCtx.drawImage(videoElement, 0, 0, vWidth, vHeight);
-        
-        const roiX = Math.floor(vWidth * 0.15);
-        const roiY = Math.floor(vHeight * 0.15);
-        const roiWidth = Math.floor(vWidth * 0.7);
-        const roiHeight = Math.floor(vHeight * 0.7);
-        
-        const imageData = canvasCtx.getImageData(roiX, roiY, roiWidth, roiHeight);
+        canvasElement.width = videoElement.videoWidth; canvasElement.height = videoElement.videoHeight;
+        canvasCtx.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
+        const roiX = Math.floor(canvasElement.width * 0.15), roiY = Math.floor(canvasElement.height * 0.15);
+        const roiW = Math.floor(canvasElement.width * 0.7), roiH = Math.floor(canvasElement.height * 0.7);
+        const imageData = canvasCtx.getImageData(roiX, roiY, roiW, roiH);
         const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" });
-        if (code && code.data) {
-          onScanMatched(code.data);
-        }
+        if (code && code.data) onScanMatched(code.data);
       }
       if (videoStream) animationFrameId = requestAnimationFrame(tickScan);
     }
 
     function stopLightningScanner() {
       if (animationFrameId) cancelAnimationFrame(animationFrameId);
-      if (videoStream) {
-        videoStream.getTracks().forEach(track => track.stop());
-        videoStream = null;
-      }
+      if (videoStream) { videoStream.getTracks().forEach(t => t.stop()); videoStream = null; }
       document.getElementById('startCamBtn').classList.remove('hidden');
       document.getElementById('stopCamBtn').classList.add('hidden');
       document.getElementById('canvas-container').classList.add('hidden');
@@ -544,55 +559,35 @@
     function onScanMatched(decodedText) {
       const cleanStudentId = String(decodedText).trim();
       if (isProcessing || cleanStudentId === lastScannedText) return;
-      isProcessing = true;
-      lastScannedText = cleanStudentId;
-
+      isProcessing = true; lastScannedText = cleanStudentId;
       const assignmentId = document.getElementById('assignmentSelect').value;
       const mode = document.querySelector('input[name="scoringMode"]:checked').value;
 
       if (mode === "default") {
         sendScoreToBackend(cleanStudentId, assignmentId, null);
       } else {
-        tempScannedStudentId = cleanStudentId;
-        stopLightningScanner();
-        
-        const stuObj = cachedStudentsDashboard.find(x => x.id === cleanStudentId);
-        const displayName = stuObj ? (stuObj.name + " " + (stuObj.surname || "")) : "รหัส: " + cleanStudentId;
-        document.getElementById('scoreModalStudentName').innerText = displayName;
+        tempScannedStudentId = cleanStudentId; stopLightningScanner();
         document.getElementById('scoreInputDisplay').value = "";
-        
         new bootstrap.Modal(document.getElementById('customScoreModal')).show();
       }
     }
 
-    function pressNum(num) { document.getElementById('scoreInputDisplay').value += num; }
+    function pressNum(n) { document.getElementById('scoreInputDisplay').value += n; }
     function clearScore() { document.getElementById('scoreInputDisplay').value = ""; }
-    function backspaceScore() {
-      const display = document.getElementById('scoreInputDisplay');
-      display.value = display.value.slice(0, -1);
-    }
+    function backspaceScore() { document.getElementById('scoreInputDisplay').value = document.getElementById('scoreInputDisplay').value.slice(0, -1); }
     function cancelCustomScore() {
-      const scoreModal = bootstrap.Modal.getInstance(document.getElementById('customScoreModal'));
-      if(scoreModal) scoreModal.hide();
-      tempScannedStudentId = "";
-      setTimeout(() => { 
-        lastScannedText = ""; isProcessing = false; startLightningScanner();
-      }, 500);
+      bootstrap.Modal.getInstance(document.getElementById('customScoreModal')).hide();
+      setTimeout(() => { lastScannedText = ""; isProcessing = false; startLightningScanner(); }, 500);
     }
-
     function submitCustomScore() {
-      const scoreVal = document.getElementById('scoreInputDisplay').value.trim();
-      if(scoreVal === "") { alert("กรุณาป้อนคะแนนก่อนบันทึกครับ"); return; }
-      const scoreModal = bootstrap.Modal.getInstance(document.getElementById('customScoreModal'));
-      if(scoreModal) scoreModal.hide();
-
-      const assignmentId = document.getElementById('assignmentSelect').value;
-      sendScoreToBackend(tempScannedStudentId, assignmentId, scoreVal);
+      const val = document.getElementById('scoreInputDisplay').value.trim();
+      if(!val) return;
+      bootstrap.Modal.getInstance(document.getElementById('customScoreModal')).hide();
+      sendScoreToBackend(tempScannedStudentId, document.getElementById('assignmentSelect').value, val);
     }
 
     function sendScoreToBackend(studentId, assignmentId, score) {
       if (animationFrameId) cancelAnimationFrame(animationFrameId);
-
       const modalContent = document.getElementById('modalContentFeedback');
       const iconDiv = document.getElementById('popupIcon');
       const headerTxt = document.getElementById('popupStatusHeader');
@@ -600,119 +595,87 @@
       const roomInfoTxt = document.getElementById('popupStudentRoomInfo');
 
       modalContent.className = "modal-content text-center p-4 modal-content-processing";
-      document.body.classList.remove('scan-bg-success', 'scan-bg-danger');
-      iconDiv.innerHTML = '<div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;"></div>';
-      headerTxt.innerText = "กำลังประมวลผล...";
-      headerTxt.className = "fw-bold mb-3 text-primary";
-      detailsTxt.innerText = "กำลังส่งข้อมูลลง Google Sheets";
-      roomInfoTxt.innerText = "";
+      iconDiv.innerHTML = '<div class="spinner-border text-primary" role="status"></div>';
+      headerTxt.innerText = "กำลังบันทึกข้อมูล...";
 
       if(!bsFeedbackModal) bsFeedbackModal = new bootstrap.Modal(document.getElementById('scanResultFeedbackModal'));
       bsFeedbackModal.show();
 
-      callBackend({ 
-        action: "processQrScan", studentId: studentId, assignmentId: assignmentId, teacherId: currentTeacherId, score: score 
-      }).then(result => {
+      callBackend({ action: "processQrScan", studentId: studentId, assignmentId: assignmentId, teacherId: currentTeacherId, score: score }).then(result => {
         modalContent.classList.remove('modal-content-processing');
-        
-        const sName = (result.student && result.student.name) ? result.student.name : "";
-        const sSurname = (result.student && result.student.surname) ? result.student.surname : "";
-        const sRoom = (result.student && result.student.room) ? result.student.room : "-";
-        const sNumber = (result.student && result.student.number) ? result.student.number : "-";
+        const sName = result.student ? (result.student.name + " " + result.student.surname) : "";
+        const sRoom = result.student ? result.student.room : "-";
+        const sNumber = result.student ? result.student.number : "-";
 
         if(result.success) {
-          playSuccessSound();
           modalContent.classList.add('modal-content-success');
-          document.body.classList.add('scan-bg-success');
           iconDiv.innerHTML = '<i class="fa-solid fa-circle-check text-success"></i>';
-          
           headerTxt.innerText = "บันทึกสำเร็จ !";
-          headerTxt.className = "fw-bold mb-3 text-success";
-          detailsTxt.innerText = sName + " " + sSurname; 
-          roomInfoTxt.innerText = "ห้อง " + sRoom + " - " + sNumber; // แสดงผลตรงตามภาพถ่าย "ห้อง - 2" หรือ "ห้อง 4-1 - 2"
+          detailsTxt.innerText = sName;
+          
+          // แก้ไขเรื่องที่ 1: เพิ่มคำว่า "เลขที่" หน้า Student_Number ตอนป๊อปอัปสแกนผลลัพธ์สำเร็จ
+          roomInfoTxt.innerText = "ห้อง " + sRoom + " - เลขที่ " + sNumber;
           updateDashboard();
         } else {
-          playErrorSound();
           modalContent.classList.add('modal-content-danger');
-          document.body.classList.add('scan-bg-danger');
           iconDiv.innerHTML = '<i class="fa-solid fa-circle-xmark text-danger"></i>';
-          
-          if(result.status === 'duplicate') {
-            headerTxt.innerText = "นักเรียนส่งงานนี้แล้ว !";
-            detailsTxt.innerText = sName + " " + sSurname; 
-            roomInfoTxt.innerText = "ห้อง " + sRoom + " - " + sNumber; 
-          } else {
-            headerTxt.innerText = "บันทึกไม่สำเร็จ";
-            detailsTxt.innerText = result.message || "ไม่มีข้อมูลในฐานข้อมูล";
-            roomInfoTxt.innerText = "";
-          }
-          headerTxt.className = "fw-bold mb-3 text-danger";
+          headerTxt.innerText = result.status === 'duplicate' ? "นักเรียนส่งงานนี้แล้ว !" : "บันทึกไม่สำเร็จ";
+          detailsTxt.innerText = sName || result.message;
+          roomInfoTxt.innerText = result.status === 'duplicate' ? "ห้อง " + sRoom + " - เลขที่ " + sNumber : "";
         }
         setTimeout(() => {
-          bsFeedbackModal.hide();
-          document.body.classList.remove('scan-bg-success', 'scan-bg-danger');
-          setTimeout(() => {
-            isProcessing = false; lastScannedText = "";
-            if (videoStream) animationFrameId = requestAnimationFrame(tickScan); else startLightningScanner();
-          }, 500);
-        }, 3000);
-      }).catch(err => {
-        modalContent.className = "modal-content text-center p-4 modal-content-danger";
-        iconDiv.innerHTML = '<i class="fa-solid fa-triangle-exclamation text-danger"></i>';
-        headerTxt.innerText = "เกิดข้อผิดพลาด";
-        headerTxt.className = "fw-bold mb-3 text-danger";
-        detailsTxt.innerText = "เชื่อมต่อล้มเหลว: " + err.message;
-        roomInfoTxt.innerText = "";
-        setTimeout(() => {
           bsFeedbackModal.hide(); isProcessing = false; lastScannedText = "";
-          if(videoStream) animationFrameId = requestAnimationFrame(tickScan);
-        }, 3000);
+          if (videoStream) animationFrameId = requestAnimationFrame(tickScan); else startLightningScanner();
+        }, 2500);
       });
     }
 
     function updateDashboard() {
       const select = document.getElementById('assignmentSelect');
-      const assignmentId = select.value;
-      if (!assignmentId) return;
-      document.getElementById('dashboardMainTitle').innerText = "การส่งงาน [" + select.options[select.selectedIndex].text + "]";
-
-      callBackend({ action: "getDashboardData", assignmentId: assignmentId }).then(dash => {
+      if (!select.value) return;
+      callBackend({ action: "getDashboardData", assignmentId: select.value }).then(dash => {
         if(dash.success) {
           cachedStudentsDashboard = dash.students;
-          const filterSelect = document.getElementById('roomFilterSelect');
-          const lastSelectedRoom = filterSelect.value;
-          const rooms = [...new Set(dash.students.map(item => item.room))].filter(Boolean).sort();
-
-          filterSelect.innerHTML = '<option value="all">-- แสดงทุกห้อง --</option>';
-          rooms.forEach(room => {
-            let opt = document.createElement('option'); opt.value = room; opt.innerText = "ห้อง " + room;
-            filterSelect.appendChild(opt);
-          });
-          if(rooms.includes(lastSelectedRoom)) filterSelect.value = lastSelectedRoom;
+          const filter = document.getElementById('roomFilterSelect');
+          const lastVal = filter.value;
+          const rooms = [...new Set(dash.students.map(s => s.room))].filter(Boolean).sort();
+          filter.innerHTML = '<option value="all">-- แสดงทุกห้อง --</option>';
+          rooms.forEach(r => { let opt = document.createElement('option'); opt.value = r; opt.innerText = "ห้อง " + r; filter.appendChild(opt); });
+          if(rooms.includes(lastVal)) filter.value = lastVal;
           renderFilteredDashboard();
         }
-      }).catch(e => console.error(e));
+      });
     }
 
     function renderFilteredDashboard() {
       const selectedRoom = document.getElementById('roomFilterSelect').value;
-      const filteredStudents = cachedStudentsDashboard.filter(student => selectedRoom === "all" || student.room === selectedRoom);
-      const submittedCount = filteredStudents.filter(s => s.submitted).length;
-      const missingList = filteredStudents.filter(s => !s.submitted);
-
-      document.getElementById('dashSubmitted').innerText = submittedCount;
-      document.getElementById('dashMissing').innerText = missingList.length;
+      const filtered = cachedStudentsDashboard.filter(s => selectedRoom === "all" || s.room === selectedRoom);
+      document.getElementById('dashSubmitted').innerText = filtered.filter(s => s.submitted).length;
+      const missing = filtered.filter(s => !s.submitted);
+      document.getElementById('dashMissing').innerText = missing.length;
       const listUl = document.getElementById('missingList'); listUl.innerHTML = "";
-      
-      if(missingList.length === 0) {
-        listUl.innerHTML = '<li class="list-group-item text-success text-center fw-bold">ส่งครบทุกคนแล้ว! 🎉</li>';
+      if(missing.length === 0) {
+        listUl.innerHTML = '<li class="list-group-item text-success text-center small fw-bold">ส่งครบทุกคนแล้ว! 🎉</li>';
       } else {
-        missingList.forEach(student => {
-          let li = document.createElement('li'); li.className = "list-group-item text-danger"; 
-          li.innerHTML = `<span>${student.name} ${student.surname} (ห้อง ${student.room} เลขที่ ${student.number})</span>`;
+        missing.forEach(s => {
+          let li = document.createElement('li'); li.className = "list-group-item text-danger small";
+          li.innerHTML = `<span>${s.name} ${s.surname} (ห้อง ${s.room} เลขที่ ${s.number})</span>`;
           listUl.appendChild(li);
         });
       }
+    }
+
+    function openCreateAssignmentModal() { toggleSidebar(); new bootstrap.Modal(document.getElementById('createAssignmentModal')).show(); }
+    function submitNewAssignment() {
+      const name = document.getElementById('newAssignName').value;
+      const p = document.getElementById('newAssignPoint').value;
+      if (!name || !p) return;
+      callBackend({
+        action: "createAssignment", name: name, assignDate: document.getElementById('newAssignDate').value,
+        dueDate: document.getElementById('newDueDate').value, points: p, teacherId: currentTeacherId
+      }).then(res => {
+        if(res.success) { alert(res.message); bootstrap.Modal.getInstance(document.getElementById('createAssignmentModal')).hide(); loadAssignments(); }
+      });
     }
 
     function logout() { window.location.reload(); }
