@@ -3,730 +3,115 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ระบบ QR Homework</title>
+  <title>ระบบ QR Homework - ตรวจสอบเวอร์ชัน V5</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-    body { background-color: #f0f2f5; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; transition: background-color 0.3s ease; padding-top: 56px; }
-    .card { border: none; box-shadow: 0 4px 10px rgba(0,0,0,0.08); border-radius: 12px; }
+    body { background-color: #0f172a; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #ffffff; padding-top: 50px; }
+    .debug-card { background-color: #1e293b; border: 2px solid #3b82f6; box-shadow: 0 10px 25px rgba(0,0,0,0.5); border-radius: 16px; padding: 30px; }
+    .btn-test { background: linear-gradient(135deg, #f59e0b, #d97706); color: white; font-weight: bold; border: none; font-size: 1.2rem; padding: 15px; }
+    .btn-test:hover { background: linear-gradient(135deg, #d97706, #b45309); color: white; }
     .hidden { display: none !important; }
-    .top-navbar { position: fixed; top: 0; left: 0; right: 0; height: 56px; background-color: #ffffff; box-shadow: 0 2px 4px rgba(0,0,0,0.05); z-index: 1030; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; }
-    .top-navbar .brand-title { font-weight: bold; color: #0d6efd; font-size: 1.25rem; }
-    .top-navbar .user-status { font-weight: 600; color: #495057; }
-    .sidebar { position: fixed; top: 56px; bottom: 0; left: -260px; width: 260px; background-color: #1e293b; color: #ffffff; transition: left 0.3s ease; z-index: 1040; box-shadow: 4px 0 10px rgba(0,0,0,0.1); padding-top: 10px; }
-    .sidebar.active { left: 0; }
-    .sidebar-overlay { position: fixed; top: 56px; bottom: 0; left: 0; right: 0; background-color: rgba(0,0,0,0.4); z-index: 1035; display: none; }
-    .sidebar-overlay.active { display: block; }
-    .sidebar .menu-item { display: flex; align-items: center; padding: 12px 20px; color: #cbd5e1; text-decoration: none; transition: all 0.2s ease; border-left: 4px solid transparent; cursor: pointer; }
-    .sidebar .menu-item:hover { background-color: #334155; color: #ffffff; border-left-color: #38bdf8; }
-    .sidebar .menu-item i { width: 25px; font-size: 1.1rem; margin-right: 10px; }
-    #canvas-container { width: 100%; max-width: 450px; margin: 0 auto; position: relative; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.15); background: #000; }
-    #previewCanvas { width: 100%; height: auto; display: block; }
-    #hiddenVideo { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
-    .scan-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; border: 4px solid rgba(255, 255, 255, 0.2); }
-    .scan-target-box { position: absolute; top: 15%; left: 15%; width: 70%; height: 70%; border: 3px dashed #0d6efd; border-radius: 8px; box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.4); animation: pulse 1.5s infinite; }
-    @keyframes pulse { 0% { border-color: #0d6efd; } 50% { border-color: #00ff66; } 100% { border-color: #0d6efd; } }
-    body.scan-bg-success { background-color: #a3cfbb !important; }
-    body.scan-bg-danger { background-color: #f1aeb5 !important; }
-    .calc-btn { height: 55px; font-size: 1.4rem; font-weight: bold; }
-    .popup-status-icon { font-size: 4rem; margin-bottom: 15px; }
-    .modal-content-processing { border: 4px solid #0d6efd; }
-    .modal-content-success { border: 4px solid #198754; }
-    .modal-content-danger { border: 4px solid #dc3545; }
   </style>
 </head>
 <body>
 
-  <div id="topNavbar" class="top-navbar hidden">
-    <button type="button" class="btn btn-outline-secondary border-0" onclick="toggleSidebar()">
-      <i class="fa-solid fa-bars fa-lg"></i>
-    </button>
-    <div class="brand-title">ระบบ QR Homework</div>
-    <div id="userStatusTxt" class="user-status">ครู: กำลังโหลด...</div>
-  </div>
-
-  <div id="sidebarOverlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
-  <div id="sidebarMenu" class="sidebar">
-    <div id="teacherMenuItems">
-      <div class="menu-item" onclick="switchTeacherView('scan')"><i class="fa-solid fa-qrcode"></i> ตรวจและสแกนงาน</div>
-      <div class="menu-item" onclick="openCreateAssignmentModal()"><i class="fa-solid fa-square-plus"></i> สร้างชิ้นงาน</div>
-    </div>
-    <div id="studentMenuItems" class="hidden">
-      <div class="menu-item" onclick="switchStudentView('dashboard')"><i class="fa-solid fa-chart-simple"></i> แผงควบคุมและงาน</div>
-    </div>
-    <hr style="border-color: #475569;">
-    <div class="menu-item text-danger" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> ออกจากระบบ</div>
-  </div>
-
-  <div class="container py-4">
-    <div id="loginSection" class="row justify-content-center">
-      <div class="col-md-5">
-        <div class="card p-4 mt-5">
-          <h3 class="text-center mb-4 text-primary fw-bold">ระบบ QR Homework</h3>
-          <p class="text-center text-muted fw-bold">เลือกประเภทผู้ใช้งาน: ครู / นักเรียน</p>
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-md-6 text-center">
+        
+        <h2 class="text-warning mb-4 fw-bold"><i class="fa-solid fa-triangle-exclamation"></i> ตรวจพบการอัปเดตระบบ V5</h2>
+        
+        <div class="debug-card text-start">
+          <p class="text-center text-info fw-bold mb-4" style="font-size: 1.1rem;">
+            ถ้าน่าจอนี้เปลี่ยนเป็นสีเข้ม (สีน้ำเงินดำ) แสดงว่าโค้ดอัปเดตสำเร็จแล้วครับ!
+          </p>
           
-          <div class="btn-group w-100 mb-4" role="group">
-            <input type="radio" class="btn-check" name="roleSelect" id="roleTeacher" value="teacher" checked>
-            <label class="btn btn-outline-primary py-2" for="roleTeacher">👨‍🏫 ครู</label>
-
-            <input type="radio" class="btn-check" name="roleSelect" id="roleStudent" value="student">
-            <label class="btn btn-outline-primary py-2" for="roleStudent">🎓 นักเรียน</label>
+          <div class="mb-4">
+            <label class="form-label fw-bold text-white">1. ตรวจสอบลิงก์ Google Apps Script ของคุณครู:</label>
+            <input type="text" id="urlDisplay" class="form-control bg-dark text-success border-secondary" readonly>
           </div>
-
-          <div class="mb-3">
-            <label class="form-label">ชื่อผู้ใช้ (Username)</label>
-            <input type="text" id="username" class="form-control" placeholder="กรอกชื่อผู้ใช้">
-          </div>
-          <div class="mb-3">
-            <label class="form-label">รหัสผ่าน (Password)</label>
-            <input type="password" id="password" class="form-control" placeholder="กรอกรหัสผ่าน">
-          </div>
-          
-          <button type="button" id="loginBtn" onclick="handleLoginDirectly()" class="btn btn-primary w-100 py-2 mb-2 fw-bold">เข้าสู่ระบบ</button>
-          <button type="button" onclick="testBackendConnection()" class="btn btn-warning w-100 py-2 mb-2 fw-bold">🔧 ทดสอบระบบเชื่อมต่อ (Debug)</button>
-          
-          <div id="loginError" class="text-danger text-center mt-3 fw-bold" style="font-size: 1.1rem;"></div>
-        </div>
-      </div>
-    </div>
-
-    <div id="teacherSection" class="row justify-content-center hidden">
-      <div class="col-md-6 mb-4">
-        <div class="card p-4 mb-4">
-          <h5 class="card-title mb-3 text-primary fw-bold">เลือกงานที่ต้องการตรวจ</h5>
-          <select id="assignmentSelect" class="form-select form-select-lg mb-3" onchange="updateDashboard()">
-            <option value="">-- กรุณาเลือกชิ้นงาน --</option>
-          </select>
 
           <div class="mb-4">
-            <label class="form-label fw-bold text-secondary">รูปแบบการให้คะแนน:</label>
-            <div class="btn-group w-100" role="group">
-              <input type="radio" class="btn-check" name="scoringMode" id="scoreDefault" value="default" checked>
-              <label class="btn btn-outline-primary" for="scoreDefault">🏆 คะแนนเต็ม</label>
-              
-              <input type="radio" class="btn-check" name="scoringMode" id="scoreCustom" value="custom">
-              <label class="btn btn-outline-primary" for="scoreCustom">✏️ กรอกคะแนน</label>
-            </div>
+            <label class="form-label fw-bold text-white">2. ทดสอบการเชื่อมต่อเชิงลึก:</label>
+            <button type="button" onclick="executeDebugConnection()" class="btn btn-test w-100 rounded-pill shadow">
+              <i class="fa-solid fa-plug"></i> คลิกตรงนี้เพื่อทดสอบเชื่อมต่อ (Debug Connect)
+            </button>
           </div>
 
-          <div class="text-center mb-3">
-            <button type="button" id="startCamBtn" onclick="startLightningScanner()" class="btn btn-success btn-lg w-100 py-3 mb-2 fw-bold"><i class="fa-solid fa-camera"></i> เปิดกล้อง</button>
-            <button type="button" id="stopCamBtn" onclick="stopLightningScanner()" class="btn btn-danger w-100 mb-2 hidden">ปิดกล้อง</button>
+          <div class="p-3 bg-dark rounded border border-secondary" style="min-height: 100px;">
+            <span class="text-secondary d-block mb-1 fw-bold">ผลการตรวจสอบระบบ:</span>
+            <div id="debugResultText" class="text-warning fw-bold">⚠️ รอกดปุ่มทดสอบด้านบน...</div>
           </div>
           
-          <div id="canvas-container" class="hidden">
-            <video id="hiddenVideo" autoplay muted playsinline></video>
-            <canvas id="previewCanvas"></canvas>
-            <div class="scan-overlay">
-              <div class="scan-target-box"></div>
-            </div>
+          <div class="mt-4 text-center">
+            <button type="button" onclick="showOldLogin()" class="btn btn-outline-light btn-sm">แสดงฟอร์มเข้าสู่ระบบดั้งเดิม</button>
           </div>
         </div>
-      </div>
 
-      <div class="col-md-6">
-        <div class="card p-4">
-          <h5 class="card-title mb-3 text-primary fw-bold" id="dashboardMainTitle">การส่งงาน [ชื่องาน]</h5>
-          
+        <div id="oldLoginSection" class="debug-card mt-4 text-start hidden">
+          <h4 class="text-primary fw-bold text-center mb-3">เข้าสู่ระบบระบบสแกน</h4>
           <div class="mb-3">
-            <label class="form-label fw-bold text-secondary">เลือกห้องเรียน:</label>
-            <select id="roomFilterSelect" class="form-select" onchange="renderFilteredDashboard()">
-              <option value="all">-- แสดงทุกห้อง --</option>
-            </select>
+            <input type="text" id="username" class="form-control" placeholder="Username">
           </div>
-
-          <div class="row text-center mb-3">
-            <div class="col-6">
-              <div class="bg-success bg-opacity-10 p-3 rounded border border-success">
-                <h6>ส่งแล้ว (คน)</h6>
-                <h3 id="dashSubmitted" class="text-success fw-bold">0</h3>
-              </div>
-            </div>
-            <div class="col-6">
-              <div class="bg-danger bg-opacity-10 p-3 rounded border border-danger">
-                <h6>ยังไม่ส่ง (คน)</h6>
-                <h3 id="dashMissing" class="text-danger fw-bold">0</h3>
-              </div>
-            </div>
+          <div class="mb-3">
+            <input type="password" id="password" class="form-control" placeholder="Password">
           </div>
-          <h6 class="fw-bold">รายชื่อนักเรียนที่ยังไม่ส่ง:</h6>
-          <ul id="missingList" class="list-group" style="max-height: 250px; overflow-y: auto;">
-            <li class="list-group-item text-muted text-center">กรุณาเลือกงานเพื่อดูรายชื่อ</li>
-          </ul>
-        </div>
-      </div>
-    </div>
-
-    <div id="studentSection" class="row justify-content-center hidden">
-      <div class="col-md-9">
-        <div class="row mb-4 text-center">
-          <div class="col-md-4 mb-3">
-            <div class="card p-3 bg-success text-white h-100">
-              <h6>✔ จำนวนงานที่ส่งแล้ว</h6>
-              <h2 id="stuSubmittedCount" class="fw-bold mt-2">0</h2>
-            </div>
-          </div>
-          <div class="col-md-4 mb-3">
-            <div class="card p-3 bg-warning text-dark h-100">
-              <h6>⚠️ จำนวนงานที่ยังไม่ส่ง</h6>
-              <h2 id="stuMissingCount" class="fw-bold mt-2 text-danger">0</h2>
-            </div>
-          </div>
-          <div class="col-md-4 mb-3">
-            <div class="card p-3 bg-info text-dark h-100" style="background-color: #e0f7fa !important; border: 2px solid #00acc1;">
-              <h6 class="fw-bold text-dark">🪙 Coins</h6>
-              <h2 id="stuCoinCount" class="fw-bold mt-2 text-primary">0</h2>
-            </div>
-          </div>
+          <button type="button" onclick="alert('กรุณากดปุ่มทดสอบด้านบนให้ผ่านก่อนครับ')" class="btn btn-primary w-100">เข้าสู่ระบบ</button>
         </div>
 
-        <div class="card p-4">
-          <h5 class="card-title mb-3 text-primary fw-bold">📝 งานทั้งหมด</h5>
-          <div class="table-responsive">
-            <table class="table table-hover">
-              <thead class="table-light">
-                <tr>
-                  <th>ชื่องาน</th>
-                  <th class="text-center" style="width: 150px;">สถานะการส่ง</th>
-                </tr>
-              </thead>
-              <tbody id="studentJobsTableBody">
-                <tr>
-                  <td colspan="2" class="text-center text-muted">กำลังโหลดข้อมูล...</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
       </div>
     </div>
   </div>
 
-  <div class="modal fade" id="customScoreModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" style="max-width: 380px;">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title text-primary fw-bold">✏️ สแกนผ่านแล้ว! กรอกคะแนน</h5>
-          <button type="button" class="btn-close" onclick="cancelCustomScore()" aria-label="Close"></button>
-        </div>
-        <div class="modal-body text-center">
-          <h6 id="scoreModalStudentName" class="mb-3 text-success fw-bold">เลขที่ - : นักเรียน</h6>
-          <input type="text" id="scoreInputDisplay" class="form-control form-control-lg text-center mb-3" readonly style="font-size: 2rem; font-weight: bold; background-color: #fff;">
-          
-          <div class="row g-2 mb-3">
-            <div class="col-4"><button type="button" onclick="pressNum(1)" class="btn btn-outline-secondary w-100 calc-btn">1</button></div>
-            <div class="col-4"><button type="button" onclick="pressNum(2)" class="btn btn-outline-secondary w-100 calc-btn">2</button></div>
-            <div class="col-4"><button type="button" onclick="pressNum(3)" class="btn btn-outline-secondary w-100 calc-btn">3</button></div>
-            <div class="col-4"><button type="button" onclick="pressNum(4)" class="btn btn-outline-secondary w-100 calc-btn">4</button></div>
-            <div class="col-4"><button type="button" onclick="pressNum(5)" class="btn btn-outline-secondary w-100 calc-btn">5</button></div>
-            <div class="col-4"><button type="button" onclick="pressNum(6)" class="btn btn-outline-secondary w-100 calc-btn">6</button></div>
-            <div class="col-4"><button type="button" onclick="pressNum(7)" class="btn btn-outline-secondary w-100 calc-btn">7</button></div>
-            <div class="col-4"><button type="button" onclick="pressNum(8)" class="btn btn-outline-secondary w-100 calc-btn">8</button></div>
-            <div class="col-4"><button type="button" onclick="pressNum(9)" class="btn btn-outline-secondary w-100 calc-btn">9</button></div>
-            <div class="col-4"><button type="button" onclick="clearScore()" class="btn btn-danger w-100 calc-btn">C</button></div>
-            <div class="col-4"><button type="button" onclick="pressNum(0)" class="btn btn-outline-secondary w-100 calc-btn">0</button></div>
-            <div class="col-4"><button type="button" onclick="backspaceScore()" class="btn btn-secondary w-100 calc-btn">⌫</button></div>
-          </div>
-          
-          <div class="d-flex gap-2">
-            <button type="button" onclick="cancelCustomScore()" class="btn btn-outline-danger w-100 py-2">ยกเลิก</button>
-            <button type="button" onclick="submitCustomScore()" class="btn btn-primary w-100 py-2">💾 บันทึกคะแนน</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="modal fade" id="scanResultFeedbackModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" style="max-width: 400px;">
-      <div id="modalContentFeedback" class="modal-content text-center p-4">
-        <div id="popupIcon" class="popup-status-icon"></div>
-        <h3 id="popupStatusHeader" class="fw-bold mb-2"></h3>
-        <h5 id="popupStudentDetails" class="text-muted fw-bold"></h5>
-      </div>
-    </div>
-  </div>
-
-  <div class="modal fade" id="createAssignmentModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title text-primary fw-bold">➕ เพิ่มชิ้นงานใหม่</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-          <div class="mb-3">
-            <label class="form-label fw-bold">ชื่องาน (Assignment Name)</label>
-            <input type="text" id="newAssignName" class="form-control" placeholder="เช่น ใบงานที่ 1">
-          </div>
-          <div class="mb-3">
-            <label class="form-label fw-bold">เดือนที่สั่ง (Assign Month)</label>
-            <select id="newAssignDate" class="form-select">
-              <option value="มกราคม">มกราคม</option><option value="กุมภาพันธ์">กุมภาพันธ์</option>
-              <option value="มีนาคม">มีนาคม</option><option value="เมษายน">เมษายน</option>
-              <option value="พฤษภาคม">พฤษภาคม</option><option value="มิถุนายน">มิถุนายน</option>
-              <option value="กรกฎาคม">กรกฎาคม</option><option value="สิงหาคม">สิงหาคม</option>
-              <option value="กันยายน">กันยายน</option><option value="ตุลาคม">ตุลาคม</option>
-              <option value="พฤศจิกายน">พฤศจิกายน</option><option value="ธันวาคม">ธันวาคม</option>
-            </select>
-          </div>
-          <div class="mb-3">
-            <label class="form-label fw-bold">กำหนดส่งเดือน (Due Month)</label>
-            <select id="newDueDate" class="form-select">
-              <option value="มกราคม">มกราคม</option><option value="กุมภาพันธ์">กุมภาพันธ์</option>
-              <option value="มีนาคม">มีนาคม</option><option value="เมษายน">เมษายน</option>
-              <option value="พฤษภาคม">พฤษภาคม</option><option value="มิถุนายน">มิถุนายน</option>
-              <option value="กรกฎาคม">กรกฎาคม</option><option value="สิงหาคม">สิงหาคม</option>
-              <option value="กันยายน">กันยายน</option><option value="ตุลาคม">ตุลาคม</option>
-              <option value="พฤศจิกายน">พฤศจิกายน</option><option value="ธันวาคม">ธันวาคม</option>
-            </select>
-          </div>
-          <div class="mb-3">
-            <label class="form-label fw-bold">คะแนนเต็มประจำงาน (Points)</label>
-            <input type="number" id="newAssignPoint" class="form-control" placeholder="เช่น 10" min="0">
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
-          <button type="button" onclick="submitNewAssignment()" class="btn btn-primary">บันทึกข้อมูลงาน</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
-    // สลับลิงก์ตรงนี้ให้ถูกต้องเสมอนะครับคุณครู
+    // 🚨 คุณครูสลับลิงก์ตรงนี้ให้เป็นลิงก์ Web App ของคุณครูนะครับ
     const BACKEND_URL = "https://script.google.com/macros/s/AKfycbzuXvt7_gU_PS34AvWmNZ9XSKIx68Gk76yUC7WvMU_8esPHL53hXOHgLxnXcCdY5Oa-/exec";
 
-    let currentTeacherId = "";
-    let currentStudentId = "";
-    let isProcessing = false;
-    let lastScannedText = "";
-    let videoStream = null;
-    let animationFrameId = null;
-    let videoElement, canvasElement, canvasCtx;
-    let tempScannedStudentId = "";
-    let cachedStudentsDashboard = [];
-    let bsFeedbackModal = null;
-    let audioCtx = null;
+    // แสดงลิงก์ในหน้าเว็บให้เห็นชัดๆ
+    document.getElementById('urlDisplay').value = BACKEND_URL;
 
-    function initAudioContext() {
-      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
-    }
-    function playSuccessSound() {
-      try {
-        if (!audioCtx) return;
-        let osc = audioCtx.createOscillator(); let gain = audioCtx.createGain();
-        osc.connect(gain); gain.connect(audioCtx.destination);
-        osc.type = "sine"; osc.frequency.setValueAtTime(1400, audioCtx.currentTime);
-        gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.05);
-        osc.start(); osc.stop(audioCtx.currentTime + 0.05);
-      } catch (e) {}
-    }
-    function playErrorSound() {
-      try {
-        if (!audioCtx) return;
-        let osc = audioCtx.createOscillator(); let gain = audioCtx.createGain();
-        osc.connect(gain); gain.connect(audioCtx.destination);
-        osc.type = "triangle"; osc.frequency.setValueAtTime(180, audioCtx.currentTime);
-        gain.gain.setValueAtTime(0.18, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
-        osc.start(); osc.stop(audioCtx.currentTime + 0.2);
-      } catch (e) {}
-    }
+    async function executeDebugConnection() {
+      const resultDiv = document.getElementById('debugResultText');
+      resultDiv.innerText = "⏳ กำลังส่งข้อมูลทดสอบ ยอดหลังบ้านกำลังทำงาน...";
+      resultDiv.className = "text-info fw-bold";
 
-    function toggleSidebar() {
-      document.getElementById('sidebarMenu').classList.toggle('active');
-      document.getElementById('sidebarOverlay').classList.toggle('active');
-    }
-    function openCreateAssignmentModal() {
-      toggleSidebar();
-      new bootstrap.Modal(document.getElementById('createAssignmentModal')).show();
-    }
-    function switchTeacherView(view) { toggleSidebar(); }
-    function switchStudentView(view) { toggleSidebar(); }
-
-    // ฟังก์ชันยิงข้อมูลที่เสถียรและทนทานที่สุด ดักจับ Error ระดับสูง
-    async function callBackend(data) {
       try {
         const response = await fetch(BACKEND_URL, {
           method: "POST",
           mode: "cors",
           headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify(data)
+          body: JSON.stringify({ action: "getAssignments" })
         });
+        
         if (!response.ok) {
-          throw new Error("HTTP Status " + response.status);
+          throw new Error("เซิร์ฟเวอร์ตอบกลับด้วยรหัสผิดพลาด HTTP: " + response.status);
         }
-        return await response.json();
+        
+        const resData = await response.json();
+        
+        if (Array.isArray(resData)) {
+          resultDiv.innerText = "🎉 เชื่อมต่อสำเร็จ 100%! ดึงข้อมูลงานได้ " + resData.length + " ชิ้นงาน โค้ด HTML คุยกับ Google Sheets ได้สมบูรณ์แล้วครับ";
+          resultDiv.className = "text-success fw-bold";
+          document.getElementById('oldLoginSection').classList.remove('hidden');
+        } else {
+          resultDiv.innerText = "⚠️ เชื่อมต่อได้ แต่ข้อมูลปลายทางผิดรูปแบบ: " + JSON.stringify(resData);
+          resultDiv.className = "text-warning fw-bold";
+        }
       } catch (err) {
-        console.error("Backend Error:", err);
-        throw err;
+        resultDiv.className = "text-danger fw-bold";
+        resultDiv.innerHTML = "🚨 การเชื่อมต่อล้มเหลว (Failed to Connect)<br><br>" +
+                              "<b>สาเหตุที่เป็นไปได้:</b><br>" +
+                              "1. ลิงก์ BACKEND_URL ผิดตัว หรือก๊อบปี้มาไม่ครบ<br>" +
+                              "2. ที่ฝั่ง Google Apps Script ตอนกด Deploy ไม่ได้เลือก Who has access เป็น <b>'Anyone' (ทุกคน)</b> ทำให้ติดสิทธิ์ความปลอดภัย (CORS Block)<br><br>" +
+                              "<b>ข้อความ Error:</b> " + err.message;
       }
     }
 
-    // ฟังก์ชันลัดตรวจสอบทันทีว่าทำไมถึงนิ่ง
-    async function testBackendConnection() {
-      alert("เริ่มการทดสอบดึงข้อมูลเชื่อมต่อฐานข้อมูล... โปรดรอผลลัพธ์สักครู่ครับ");
-      try {
-        const res = await callBackend({ action: "getAssignments" });
-        if (Array.isArray(res)) {
-          alert("🎉 เชื่อมต่อสำเร็จ! ดึงข้อมูลชิ้นงานได้ปกติ จำนวน: " + res.length + " ชิ้นงาน โค้ดหลังบ้านไม่มีปัญหาครับ");
-        } else {
-          alert("⚠️ หลังบ้านตอบกลับมา แต่โครงสร้างไม่ใช่ Array: " + JSON.stringify(res));
-        }
-      } catch (e) {
-        alert("🚨 การทดสอบล้มเหลวโดยสิ้นเชิง!\n\nสาเหตุที่เป็นไปได้:\n1. URL ของ Web App ไม่ถูกต้อง\n2. ลืมเปิดสิทธิ์ให้เป็น 'Anyone' ใน Google Apps Script ทำให้โดน CORS Block\n\nรายละเอียด Error: " + e.message);
-      }
+    function showOldLogin() {
+      document.getElementById('oldLoginSection').classList.toggle('hidden');
     }
-
-    // ฟังก์ชันล็อกอินจัดการแบบเด็ดขาด
-    async function handleLoginDirectly() {
-      const btn = document.getElementById('loginBtn');
-      const errorDiv = document.getElementById('loginError');
-      const user = document.getElementById('username').value.trim();
-      const pass = document.getElementById('password').value.trim();
-      
-      if(!user || !pass) { 
-        alert("กรุณากรอกชื่อผู้ใช้และรหัสผ่านให้ครบถ้วนครับ"); 
-        return; 
-      }
-      
-      btn.disabled = true;
-      errorDiv.innerText = "กำลังติดต่อฐานข้อมูล Google Sheets...";
-      
-      const roleSelectElement = document.querySelector('input[name="roleSelect"]:checked');
-      const role = roleSelectElement ? roleSelectElement.value : "teacher";
-
-      try {
-        if (role === "teacher") {
-          const response = await callBackend({ action: "checkLogin", username: user, password: pass });
-          btn.disabled = false;
-          if(response.success) {
-            currentTeacherId = response.teacherId;
-            document.getElementById('userStatusTxt').innerText = "ครู: " + response.teacherName;
-            document.getElementById('teacherMenuItems').classList.remove('hidden');
-            document.getElementById('studentMenuItems').classList.add('hidden');
-            document.getElementById('loginSection').classList.add('hidden');
-            document.getElementById('topNavbar').classList.remove('hidden');
-            document.getElementById('teacherSection').classList.remove('hidden');
-            loadAssignments();
-          } else { 
-            errorDiv.innerText = response.message; 
-          }
-        } else {
-          const response = await callBackend({ action: "studentLogin", username: user, password: pass });
-          btn.disabled = false;
-          if(response.success) {
-            currentStudentId = response.studentId;
-            document.getElementById('userStatusTxt').innerText = "นักเรียน: " + response.studentName;
-            document.getElementById('teacherMenuItems').classList.add('hidden');
-            document.getElementById('studentMenuItems').classList.remove('hidden');
-            document.getElementById('loginSection').classList.add('hidden');
-            document.getElementById('topNavbar').classList.remove('hidden');
-            document.getElementById('studentSection').classList.remove('hidden');
-            loadStudentDashboard();
-          } else {
-            errorDiv.innerText = response.message;
-          }
-        }
-      } catch (error) {
-        btn.disabled = false;
-        errorDiv.innerText = "การเชื่อมต่อล้มเหลว ค้างที่ฝั่งเซิร์ฟเวอร์ปลายทาง";
-        alert("🚨 เกิดข้อผิดพลาดร้ายแรงทางเครือข่าย:\n" + error.message + "\n\nกรุณากดปุ่มสีส้มเพื่อตรวจเช็กสถานะเชิงลึกครับ");
-      }
-    }
-
-    function loadAssignments() {
-      callBackend({ action: "getAssignments" }).then(assignments => {
-        const select = document.getElementById('assignmentSelect');
-        select.innerHTML = '<option value="">-- กรุณาเลือกชิ้นงาน --</option>';
-        assignments.forEach(item => {
-          let opt = document.createElement('option'); 
-          opt.value = item.id; 
-          opt.innerText = item.name; 
-          select.appendChild(opt);
-        });
-      }).catch(e => alert("โหลดงานล้มเหลว: " + e.message));
-    }
-
-    function submitNewAssignment() {
-      const name = document.getElementById('newAssignName').value;
-      const assignDate = document.getElementById('newAssignDate').value;
-      const dueDate = document.getElementById('newDueDate').value;
-      const points = document.getElementById('newAssignPoint').value;
-
-      if (!name || !points) { alert("กรุณากรอกข้อมูลให้ครบถ้วนครับ!"); return; }
-
-      const modalElement = document.getElementById('createAssignmentModal');
-      const modal = bootstrap.Modal.getInstance(modalElement);
-      
-      callBackend({
-        action: "createAssignment", name: name, assignDate: assignDate, dueDate: dueDate, points: points, teacherId: currentTeacherId
-      }).then(res => {
-        if(res.success) {
-          alert(res.message);
-          modal.hide();
-          document.getElementById('newAssignName').value = "";
-          document.getElementById('newAssignPoint').value = "";
-          loadAssignments();
-        } else {
-          alert("ล้มเหลว: " + res.message);
-        }
-      }).catch(e => alert("สร้างงานไม่สำเร็จ: " + e.message));
-    }
-
-    function loadStudentDashboard() {
-      const tableBody = document.getElementById('studentJobsTableBody');
-      tableBody.innerHTML = `<tr><td colspan="2" class="text-center text-muted">กำลังดึงข้อมูล...</td></tr>`;
-
-      callBackend({ action: "getStudentDashboard", studentId: currentStudentId }).then(data => {
-        if (data.success) {
-          document.getElementById('stuSubmittedCount').innerText = data.submittedCount;
-          document.getElementById('stuMissingCount').innerText = data.missingJobsCount;
-          document.getElementById('stuCoinCount').innerText = data.coins + " 🪙";
-          tableBody.innerHTML = "";
-          if(data.allJobs.length === 0) {
-            tableBody.innerHTML = `<tr><td colspan="2" class="text-center text-success fw-bold">ยังไม่มีภารกิจงานในระบบขณะนี้ 🎉</td></tr>`;
-            return;
-          }
-          data.allJobs.forEach(job => {
-            const tr = document.createElement('tr');
-            const statusBadge = job.status === "ส่งแล้ว" 
-              ? `<span class="badge bg-success" style="font-size:0.95rem;">✔ ส่งแล้ว</span>`
-              : `<span class="badge bg-danger" style="font-size:0.95rem;">❌ ยังไม่ส่ง</span>`;
-            tr.innerHTML = `<td><span class="fw-bold">${job.name}</span></td><td class="text-center">${statusBadge}</td>`;
-            tableBody.appendChild(tr);
-          });
-        }
-      }).catch(e => alert("โหลดแดชบอร์ดนักเรียนล้มเหลว: " + e.message));
-    }
-
-    function startLightningScanner() {
-      const assignmentId = document.getElementById('assignmentSelect').value;
-      if (!assignmentId) { alert("กรุณาเลือกชิ้นงานก่อนกดเปิดกล้องครับ!"); return; }
-
-      try { initAudioContext(); } catch(e) {}
-
-      videoElement = document.getElementById("hiddenVideo");
-      canvasElement = document.getElementById("previewCanvas");
-      canvasCtx = canvasElement.getContext("2d", { willReadFrequently: true });
-
-      document.getElementById('startCamBtn').classList.add('hidden');
-      document.getElementById('stopCamBtn').classList.remove('hidden');
-      document.getElementById('canvas-container').classList.remove('hidden');
-
-      navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment", width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 60 } }
-      }).then(function(stream) {
-        videoStream = stream;
-        videoElement.srcObject = stream;
-        videoElement.play();
-        animationFrameId = requestAnimationFrame(tickScan);
-      }).catch(function(err) {
-        alert("ไม่สามารถเข้าถึงกล้องหลังได้: " + err);
-        stopLightningScanner();
-      });
-    }
-
-    function tickScan() {
-      if (videoElement && videoElement.readyState === videoElement.HAVE_ENOUGH_DATA) {
-        const vWidth = videoElement.videoWidth;
-        const vHeight = videoElement.videoHeight;
-        canvasElement.width = vWidth;
-        canvasElement.height = vHeight;
-        canvasCtx.drawImage(videoElement, 0, 0, vWidth, vHeight);
-        
-        const roiX = Math.floor(vWidth * 0.15);
-        const roiY = Math.floor(vHeight * 0.15);
-        const roiWidth = Math.floor(vWidth * 0.7);
-        const roiHeight = Math.floor(vHeight * 0.7);
-        
-        const imageData = canvasCtx.getImageData(roiX, roiY, roiWidth, roiHeight);
-        const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" });
-        if (code && code.data) {
-          onScanMatched(code.data);
-        }
-      }
-      if (videoStream) animationFrameId = requestAnimationFrame(tickScan);
-    }
-
-    function stopLightningScanner() {
-      if (animationFrameId) cancelAnimationFrame(animationFrameId);
-      if (videoStream) {
-        videoStream.getTracks().forEach(track => track.stop());
-        videoStream = null;
-      }
-      document.getElementById('startCamBtn').classList.remove('hidden');
-      document.getElementById('stopCamBtn').classList.add('hidden');
-      document.getElementById('canvas-container').classList.add('hidden');
-    }
-
-    function onScanMatched(decodedText) {
-      const cleanStudentId = String(decodedText).trim();
-      if (isProcessing || cleanStudentId === lastScannedText) return;
-      isProcessing = true;
-      lastScannedText = cleanStudentId;
-
-      const assignmentId = document.getElementById('assignmentSelect').value;
-      const mode = document.querySelector('input[name="scoringMode"]:checked').value;
-
-      if (mode === "default") {
-        sendScoreToBackend(cleanStudentId, assignmentId, null);
-      } else {
-        tempScannedStudentId = cleanStudentId;
-        stopLightningScanner();
-        
-        const stuObj = cachedStudentsDashboard.find(x => x.id === cleanStudentId);
-        const displayName = stuObj ? stuObj.name : "รหัส: " + cleanStudentId;
-        document.getElementById('scoreModalStudentName').innerText = displayName;
-        document.getElementById('scoreInputDisplay').value = "";
-        
-        new bootstrap.Modal(document.getElementById('customScoreModal')).show();
-      }
-    }
-
-    function pressNum(num) { document.getElementById('scoreInputDisplay').value += num; }
-    function clearScore() { document.getElementById('scoreInputDisplay').value = ""; }
-    function backspaceScore() {
-      const display = document.getElementById('scoreInputDisplay');
-      display.value = display.value.slice(0, -1);
-    }
-    function cancelCustomScore() {
-      const scoreModal = bootstrap.Modal.getInstance(document.getElementById('customScoreModal'));
-      if(scoreModal) scoreModal.hide();
-      tempScannedStudentId = "";
-      setTimeout(() => { 
-        lastScannedText = ""; isProcessing = false; startLightningScanner();
-      }, 500);
-    }
-
-    function submitCustomScore() {
-      const scoreVal = document.getElementById('scoreInputDisplay').value.trim();
-      if(scoreVal === "") { alert("กรุณาป้อนคะแนนก่อนบันทึกครับ"); return; }
-      const scoreModal = bootstrap.Modal.getInstance(document.getElementById('customScoreModal'));
-      if(scoreModal) scoreModal.hide();
-
-      const assignmentId = document.getElementById('assignmentSelect').value;
-      sendScoreToBackend(tempScannedStudentId, assignmentId, scoreVal);
-    }
-
-    function sendScoreToBackend(studentId, assignmentId, score) {
-      if (animationFrameId) cancelAnimationFrame(animationFrameId);
-
-      const modalContent = document.getElementById('modalContentFeedback');
-      const iconDiv = document.getElementById('popupIcon');
-      const headerTxt = document.getElementById('popupStatusHeader');
-      const detailsTxt = document.getElementById('popupStudentDetails');
-
-      modalContent.className = "modal-content text-center p-4 modal-content-processing";
-      document.body.classList.remove('scan-bg-success', 'scan-bg-danger');
-      iconDiv.innerHTML = '<div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;"></div>';
-      headerTxt.innerText = "กำลังประมวลผล...";
-      headerTxt.className = "fw-bold mb-2 text-primary";
-      detailsTxt.innerText = "กำลังส่งข้อมูลลง Google Sheets";
-
-      if(!bsFeedbackModal) bsFeedbackModal = new bootstrap.Modal(document.getElementById('scanResultFeedbackModal'));
-      bsFeedbackModal.show();
-
-      callBackend({ 
-        action: "processQrScan", studentId: studentId, assignmentId: assignmentId, teacherId: currentTeacherId, score: score 
-      }).then(result => {
-        modalContent.classList.remove('modal-content-processing');
-        if(result.success) {
-          playSuccessSound();
-          modalContent.classList.add('modal-content-success');
-          document.body.classList.add('scan-bg-success');
-          iconDiv.innerHTML = '<i class="fa-solid fa-circle-check text-success"></i>';
-          headerTxt.innerText = "บันทึกสำเร็จ";
-          headerTxt.className = "fw-bold mb-2 text-success";
-          detailsTxt.innerText = `ห้อง ${result.student.room || '-'} เลขที่ ${result.student.number} : ${result.student.name}`;
-          updateDashboard();
-        } else {
-          playErrorSound();
-          modalContent.classList.add('modal-content-danger');
-          document.body.classList.add('scan-bg-danger');
-          iconDiv.innerHTML = '<i class="fa-solid fa-circle-xmark text-danger"></i>';
-          if(result.status === 'duplicate') {
-            headerTxt.innerText = "ส่งงานชิ้นนี้ไปแล้ว";
-            detailsTxt.innerText = `ห้อง ${result.student.room || '-'} เลขที่ ${result.student.number} : ${result.student.name}`;
-          } else {
-            headerTxt.innerText = "บันทึกไม่สำเร็จ";
-            detailsTxt.innerText = result.message;
-          }
-          headerTxt.className = "fw-bold mb-2 text-danger";
-        }
-        setTimeout(() => {
-          bsFeedbackModal.hide();
-          document.body.classList.remove('scan-bg-success', 'scan-bg-danger');
-          setTimeout(() => {
-            isProcessing = false; lastScannedText = "";
-            if (videoStream) animationFrameId = requestAnimationFrame(tickScan); else startLightningScanner();
-          }, 500);
-        }, 3000);
-      }).catch(err => {
-        modalContent.className = "modal-content text-center p-4 modal-content-danger";
-        iconDiv.innerHTML = '<i class="fa-solid fa-triangle-exclamation text-danger"></i>';
-        headerTxt.innerText = "เกิดข้อผิดพลาด";
-        headerTxt.className = "fw-bold mb-2 text-danger";
-        detailsTxt.innerText = "เชื่อมต่อล้มเหลว: " + err.message;
-        setTimeout(() => {
-          bsFeedbackModal.hide(); isProcessing = false; lastScannedText = "";
-          if(videoStream) animationFrameId = requestAnimationFrame(tickScan);
-        }, 3000);
-      });
-    }
-
-    function updateDashboard() {
-      const select = document.getElementById('assignmentSelect');
-      const assignmentId = select.value;
-      if (!assignmentId) return;
-      document.getElementById('dashboardMainTitle').innerText = "การส่งงาน [" + select.options[select.selectedIndex].text + "]";
-
-      callBackend({ action: "getDashboardData", assignmentId: assignmentId }).then(dash => {
-        if(dash.success) {
-          cachedStudentsDashboard = dash.students;
-          const filterSelect = document.getElementById('roomFilterSelect');
-          const lastSelectedRoom = filterSelect.value;
-          const rooms = [...new Set(dash.students.map(item => item.room))].filter(Boolean).sort();
-
-          filterSelect.innerHTML = '<option value="all">-- แสดงทุกห้อง --</option>';
-          rooms.forEach(room => {
-            let opt = document.createElement('option'); opt.value = room; opt.innerText = "ห้อง " + room;
-            filterSelect.appendChild(opt);
-          });
-          if(rooms.includes(lastSelectedRoom)) filterSelect.value = lastSelectedRoom;
-          renderFilteredDashboard();
-        }
-      }).catch(e => console.error(e));
-    }
-
-    function renderFilteredDashboard() {
-      const selectedRoom = document.getElementById('roomFilterSelect').value;
-      const filteredStudents = cachedStudentsDashboard.filter(student => selectedRoom === "all" || student.room === selectedRoom);
-      const submittedCount = filteredStudents.filter(s => s.submitted).length;
-      const missingList = filteredStudents.filter(s => !s.submitted);
-
-      document.getElementById('dashSubmitted').innerText = submittedCount;
-      document.getElementById('dashMissing').innerText = missingList.length;
-      const listUl = document.getElementById('missingList'); listUl.innerHTML = "";
-      
-      if(missingList.length === 0) {
-        listUl.innerHTML = '<li class="list-group-item text-success text-center fw-bold">ส่งครบทุกคนแล้ว! 🎉</li>';
-      } else {
-        missingList.forEach(student => {
-          let li = document.createElement('li'); li.className = "list-group-item text-danger"; 
-          li.innerHTML = `<span>${student.name} ห้อง ${student.room}</span>`;
-          listUl.appendChild(li);
-        });
-      }
-    }
-
-    function logout() { window.location.reload(); }
   </script>
 </body>
 </html>
