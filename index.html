@@ -254,7 +254,6 @@
 </head>
 <body>
 
-  <!-- แถบหัวข้อด้านบน -->
   <div id="topNavbar" class="top-navbar hidden">
     <button type="button" class="btn btn-outline-secondary border-0 p-1" onclick="toggleSidebar()">
       <i class="fa-solid fa-bars fa-lg" style="color:#e65100;"></i>
@@ -263,7 +262,6 @@
     <div id="userStatusTxt" class="user-status">กำลังโหลด...</div>
   </div>
 
-  <!-- แถบเมนูด้านซ้าย -->
   <div id="sidebarOverlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
   <div id="sidebarMenu" class="sidebar">
     <div id="teacherMenuItems" class="hidden">
@@ -279,7 +277,6 @@
   </div>
 
   <div class="container py-3">
-    <!-- หน้าแรก (Login Screen) -->
     <div id="loginSection" class="row justify-content-center">
       <div class="col-md-5">
         <div class="card p-4 mt-4" style="border: 2px solid #ffe0b2;">
@@ -305,7 +302,6 @@
       </div>
     </div>
 
-    <!-- ส่วนของคุณครู -->
     <div id="teacherSection" class="row justify-content-center hidden">
       <div class="col-md-6 mb-4">
         <div class="card p-4 mb-4">
@@ -352,7 +348,6 @@
       </div>
     </div>
 
-    <!-- ส่วนของนักเรียน -->
     <div id="studentSection" class="row justify-content-center hidden">
       <div class="col-md-9" id="studentDashTab">
         <div class="row mb-4 text-center">
@@ -391,7 +386,6 @@
     </div>
   </div>
 
-  <!-- POPUP MODAL: สุ่มการ์ดพลังพิกเซลโหลดดิ้ง -->
   <div class="modal fade" id="gachaAnimationModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered justify-content-center">
       <div class="modal-content bg-dark text-white text-center p-4 border-0" style="max-width:360px; border-radius:15px;">
@@ -406,14 +400,12 @@
     </div>
   </div>
 
-  <!-- POPUP MODAL: รายละเอียดการ์ดพลัง -->
   <div class="modal fade" id="pokemonCardDetailModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered justify-content-center" style="max-width: 100%;">
       <div id="pokemonCardInjectArea" class="pokemon-card-wrapper"></div>
     </div>
   </div>
 
-  <!-- POPUP MODAL: เครื่องคิดเลขคะแนนคุณครู -->
   <div class="modal fade" id="customScoreModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered" style="max-width: 380px;">
       <div class="modal-content">
@@ -447,7 +439,6 @@
     </div>
   </div>
 
-  <!-- POPUP MODAL แจ้งเตือนผลลัพธ์การสแกน -->
   <div class="modal fade" id="scanResultFeedbackModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
       <div id="modalContentFeedback" class="modal-content text-center p-4">
@@ -459,7 +450,6 @@
     </div>
   </div>
 
-  <!-- POPUP MODAL: เมนูสร้างชิ้นงานใหม่ -->
   <div class="modal fade" id="createAssignmentModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog"><div class="modal-content">
         <div class="modal-header"><h5 class="modal-title fw-bold" style="color:#e65100;">➕ เพิ่มชิ้นงานใหม่</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
@@ -485,13 +475,13 @@
     const rarityNames = ["Common", "Rare", "Super Rare", "Super Super Rare", "Secret", "Legendary"];
     const rarityBorderColors = ["#6c757d", "#0d6efd", "#fd7e14", "#dc3545", "#d63384", "#bf953f"];
 
-    // ฟังก์ชันปรับปรุงขั้นเด็ดขาด: แปลงลิงก์ไปใช้ระบบเซิร์ฟเวอร์รูปภาพของกูเกิลโดยเฉพาะ เพื่อให้ระบบ iOS (WebKit) ยอมให้ผ่านและแสดงรูปภาพ
+    // ฟังก์ชันปรับปรุงขั้นเด็ดขาดสำหรับแก้ปัญหารูปไม่แสดงผลบนอุปกรณ์ iOS/Safari/Chrome Mobile
     function formatDriveImageUrl(url) {
       if (!url) return 'https://via.placeholder.com/300x300?text=No+Image';
       
       let cleanUrl = String(url).trim();
       
-      // กรณีมีสูตรสเปรดชีตหลงเหลือมา ให้ถอดเอาเฉพาะตัว URL
+      // กรณีมีสูตรสเปรดชีตหลงเหลือมา เช่น =IMAGE("url") ให้ถอดเอาเฉพาะตัว URL ข้างใน
       if (cleanUrl.toUpperCase().startsWith("=IMAGE")) {
         const matchUrl = cleanUrl.match(/"([^"]+)"/);
         if (matchUrl && matchUrl[1]) {
@@ -499,11 +489,11 @@
         }
       }
       
-      // ดึง ID สิทธิ์การเข้าถึงไฟล์ 33-44 หลัก ออกมาจากทุกลักษณะลิงก์ของ Google Drive
+      // ดึง ID ไฟล์ Google Drive ขนาด 33-44 หลัก
       const match = cleanUrl.match(/(?:file\/d\/|open\?id=|uc\?id=|id=)([a-zA-Z0-9_-]{33,44})/);
       if (match && match[1]) {
-        // เปลี่ยนมาใช้ lh3.googleusercontent.com/d/ ซึ่งปลดล็อกความปลอดภัยของ iOS ได้สมบูรณ์แบบ
-        return `https://lh3.googleusercontent.com/d/${match[1]}`;
+        // ใช้ระบบ Thumbnail API ของกูเกิลโดยตรง ซึ่ง iOS ยอมรับและโหลดภาพผ่านได้ง่ายที่สุดโดยไม่โดนบล็อก CORS
+        return `https://drive.google.com/thumbnail?sz=w600&id=${match[1]}`;
       }
       
       // บังคับเปลี่ยนโปรโตคอลความปลอดภัยพื้นฐาน
