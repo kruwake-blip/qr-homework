@@ -69,7 +69,6 @@
           <div class="btn-group w-100 mb-4" role="group">
             <input type="radio" class="btn-check" name="roleSelect" id="roleTeacher" value="teacher" checked>
             <label class="btn btn-outline-primary py-2" for="roleTeacher">👨‍🏫 ครู</label>
-
             <input type="radio" class="btn-check" name="roleSelect" id="roleStudent" value="student">
             <label class="btn btn-outline-primary py-2" for="roleStudent">🎓 นักเรียน</label>
           </div>
@@ -84,7 +83,6 @@
           </div>
           
           <button type="button" id="loginBtn" onclick="handleLoginDirectly()" class="btn btn-primary w-100 py-2 mb-2 fw-bold">เข้าสู่ระบบ</button>
-          
           <div id="loginError" class="text-danger text-center mt-3 fw-bold" style="font-size: 1.1rem;"></div>
         </div>
       </div>
@@ -103,7 +101,6 @@
             <div class="btn-group w-100" role="group">
               <input type="radio" class="btn-check" name="scoringMode" id="scoreDefault" value="default" checked>
               <label class="btn btn-outline-primary" for="scoreDefault">🏆 คะแนนเต็ม</label>
-              
               <input type="radio" class="btn-check" name="scoringMode" id="scoreCustom" value="custom">
               <label class="btn btn-outline-primary" for="scoreCustom">✏️ กรอกคะแนน</label>
             </div>
@@ -126,7 +123,7 @@
 
       <div class="col-md-6">
         <div class="card p-4">
-          <h5 class="card-title mb-3 text-primary fw-bold" id="dashboardMainTitle">การส่งงาน [ชื่องาน]</h5>
+          <h5 class="card-title mb-3 text-primary fw-bold" id="dashboardMainTitle">การส่งงาน</h5>
           
           <div class="mb-3">
             <label class="form-label fw-bold text-secondary">เลือกห้องเรียน:</label>
@@ -297,6 +294,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
+    // กรุณาเปลี่ยนตัวแปรนี้ให้เป็น Web App URL ของคุณครูทุกครั้งหลังจากทำการ Deploy เวอร์ชันใหม่
     const BACKEND_URL = "https://script.google.com/macros/s/AKfycbzuXvt7_gU_PS34AvWmNZ9XSKIx68Gk76yUC7WvMU_8esPHL53hXOHgLxnXcCdY5Oa-/exec";
 
     let currentTeacherId = "";
@@ -505,7 +503,7 @@
         videoElement.play();
         animationFrameId = requestAnimationFrame(tickScan);
       }).catch(function(err) {
-        alert("ไม่สามารถเข้าถึงกล้องหลังได้: " + err);
+        alert("ไม่สามารถเข้าถึงกล้องได้: " + err);
         stopLightningScanner();
       });
     }
@@ -631,7 +629,7 @@
           headerTxt.innerText = "บันทึกสำเร็จ !";
           headerTxt.className = "fw-bold mb-3 text-success";
           detailsTxt.innerText = sName + " " + sSurname; 
-          roomInfoTxt.innerText = "ห้อง " + sRoom + " " + sNumber; 
+          roomInfoTxt.innerText = "ห้อง " + sRoom + " - " + sNumber; // แสดงผลตรงตามภาพถ่าย "ห้อง - 2" หรือ "ห้อง 4-1 - 2"
           updateDashboard();
         } else {
           playErrorSound();
@@ -642,7 +640,7 @@
           if(result.status === 'duplicate') {
             headerTxt.innerText = "นักเรียนส่งงานนี้แล้ว !";
             detailsTxt.innerText = sName + " " + sSurname; 
-            roomInfoTxt.innerText = "ห้อง " + sRoom + " " + sNumber; 
+            roomInfoTxt.innerText = "ห้อง " + sRoom + " - " + sNumber; 
           } else {
             headerTxt.innerText = "บันทึกไม่สำเร็จ";
             detailsTxt.innerText = result.message || "ไม่มีข้อมูลในฐานข้อมูล";
