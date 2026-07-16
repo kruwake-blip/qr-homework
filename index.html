@@ -93,7 +93,7 @@
             <label class="form-label">รหัสผ่าน (Password)</label>
             <input type="password" id="password" class="form-control" placeholder="กรอกรหัสผ่าน">
           </div>
-          <button type="button" id="loginBtn" class="btn btn-primary w-100 py-2 mb-2">เข้าสู่ระบบ</button>
+          <button type="button" id="loginBtn" onclick="handleLoginDirectly(event)" class="btn btn-primary w-100 py-2 mb-2">เข้าสู่ระบบ</button>
           <div id="loginError" class="text-danger text-center mt-3 fw-bold"></div>
         </div>
       </div>
@@ -146,87 +146,4 @@
 
           <div class="row text-center mb-3">
             <div class="col-6">
-              <div class="bg-success bg-opacity-10 p-3 rounded border border-success">
-                <h6>ส่งแล้ว (คน)</h6>
-                <h3 id="dashSubmitted" class="text-success fw-bold">0</h3>
-              </div>
-            </div>
-            <div class="col-6">
-              <div class="bg-danger bg-opacity-10 p-3 rounded border border-danger">
-                <h6>ยังไม่ส่ง (คน)</h6>
-                <h3 id="dashMissing" class="text-danger fw-bold">0</h3>
-              </div>
-            </div>
-          </div>
-          <h6 class="fw-bold">รายชื่อนักเรียนที่ยังไม่ส่ง:</h6>
-          <ul id="missingList" class="list-group" style="max-height: 250px; overflow-y: auto;">
-            <li class="list-group-item text-muted text-center">กรุณาเลือกงานเพื่อดูรายชื่อ</li>
-          </ul>
-        </div>
-      </div>
-    </div>
-
-    <div id="studentSection" class="row justify-content-center hidden">
-      <div class="col-md-9">
-        <div class="row mb-4 text-center">
-          <div class="col-md-4 mb-3">
-            <div class="card p-3 bg-success text-white h-100">
-              <h6>✔ จำนวนงานที่ส่งแล้ว</h6>
-              <h2 id="stuSubmittedCount" class="fw-bold mt-2">0</h2>
-            </div>
-          </div>
-          <div class="col-md-4 mb-3">
-            <div class="card p-3 bg-warning text-dark h-100">
-              <h6>⚠️ จำนวนงานที่ยังไม่ส่ง</h6>
-              <h2 id="stuMissingCount" class="fw-bold mt-2 text-danger">0</h2>
-            </div>
-          </div>
-          <div class="col-md-4 mb-3">
-            <div class="card p-3 bg-info text-dark h-100" style="background-color: #e0f7fa !important; border: 2px solid #00acc1;">
-              <h6 class="fw-bold text-dark">🪙 Coins</h6>
-              <h2 id="stuCoinCount" class="fw-bold mt-2 text-primary">0</h2>
-            </div>
-          </div>
-        </div>
-
-        <div class="card p-4">
-          <h5 class="card-title mb-3 text-primary fw-bold">📝 งานทั้งหมด</h5>
-          <div class="table-responsive">
-            <table class="table table-hover">
-              <thead class="table-light">
-                <tr>
-                  <th>ชื่องาน</th>
-                  <th class="text-center" style="width: 150px;">สถานะการส่ง</th>
-                </tr>
-              </thead>
-              <tbody id="studentJobsTableBody">
-                <tr>
-                  <td colspan="2" class="text-center text-muted">กำลังโหลดข้อมูล...</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="modal fade" id="customScoreModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" style="max-width: 380px;">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title text-primary fw-bold">✏️ สแกนผ่านแล้ว! กรอกคะแนน</h5>
-          <button type="button" class="btn-close" onclick="cancelCustomScore()" aria-label="Close"></button>
-        </div>
-        <div class="modal-body text-center">
-          <h6 id="scoreModalStudentName" class="mb-3 text-success fw-bold">เลขที่ - : นักเรียน</h6>
-          <input type="text" id="scoreInputDisplay" class="form-control form-control-lg text-center mb-3" readonly style="font-size: 2rem; font-weight: bold; background-color: #fff;">
-          
-          <div class="row g-2 mb-3">
-            <div class="col-4"><button type="button" onclick="pressNum(1)" class="btn btn-outline-secondary w-100 calc-btn">1</button></div>
-            <div class="col-4"><button type="button" onclick="pressNum(2)" class="btn btn-outline-secondary w-100 calc-btn">2</button></div>
-            <div class="col-4"><button type="button" onclick="pressNum(3)" class="btn btn-outline-secondary w-100 calc-btn">3</button></div>
-            <div class="col-4"><button type="button" onclick="pressNum(4)" class="btn btn-outline-secondary w-100 calc-btn">4</button></div>
-            <div class="col-4"><button type="button" onclick="pressNum(5)" class="btn btn-outline-secondary w-100 calc-btn">5</button></div>
-            <div class="col-4"><button type="button" onclick="pressNum(6)" class="btn btn-outline-secondary w-100 calc-btn">6</button></div>
-            <div class="col-4"><button type
+              <div class="bg-success
