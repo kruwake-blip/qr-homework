@@ -50,7 +50,7 @@
 <body>
 
   <div id="topNavbar" class="top-navbar hidden">
-    <button class="btn btn-outline-secondary border-0" onclick="toggleSidebar()">
+    <button type="button" class="btn btn-outline-secondary border-0" onclick="toggleSidebar()">
       <i class="fa-solid fa-bars fa-lg"></i>
     </button>
     <div class="brand-title">ระบบ QR Homework</div>
@@ -67,4 +67,166 @@
       <div class="menu-item" onclick="switchStudentView('dashboard')"><i class="fa-solid fa-chart-simple"></i> แผงควบคุมและงาน</div>
     </div>
     <hr style="border-color: #475569;">
-    <div class="menu-item text-danger" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> ออกจากระบบ
+    <div class="menu-item text-danger" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> ออกจากระบบ</div>
+  </div>
+
+  <div class="container py-4">
+    <div id="loginSection" class="row justify-content-center">
+      <div class="col-md-5">
+        <div class="card p-4 mt-5">
+          <h3 class="text-center mb-4 text-primary fw-bold">ระบบ QR Homework</h3>
+          <p class="text-center text-muted fw-bold">เลือกประเภทผู้ใช้งาน: ครู / นักเรียน</p>
+          
+          <div class="btn-group w-100 mb-4" role="group">
+            <input type="radio" class="btn-check" name="roleSelect" id="roleTeacher" value="teacher" checked>
+            <label class="btn btn-outline-primary py-2" for="roleTeacher">👨‍🏫 ครู</label>
+
+            <input type="radio" class="btn-check" name="roleSelect" id="roleStudent" value="student">
+            <label class="btn btn-outline-primary py-2" for="roleStudent">🎓 นักเรียน</label>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">ชื่อผู้ใช้ (Username)</label>
+            <input type="text" id="username" class="form-control" placeholder="กรอกชื่อผู้ใช้">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">รหัสผ่าน (Password)</label>
+            <input type="password" id="password" class="form-control" placeholder="กรอกรหัสผ่าน">
+          </div>
+          <button type="button" id="loginBtn" class="btn btn-primary w-100 py-2 mb-2">เข้าสู่ระบบ</button>
+          <div id="loginError" class="text-danger text-center mt-3 fw-bold"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="teacherSection" class="row justify-content-center hidden">
+      <div class="col-md-6 mb-4">
+        <div class="card p-4 mb-4">
+          <h5 class="card-title mb-3 text-primary fw-bold">เลือกงานที่ต้องการตรวจ</h5>
+          <select id="assignmentSelect" class="form-select form-select-lg mb-3" onchange="updateDashboard()">
+            <option value="">-- กรุณาเลือกชิ้นงาน --</option>
+          </select>
+
+          <div class="mb-4">
+            <label class="form-label fw-bold text-secondary">รูปแบบการให้คะแนน:</label>
+            <div class="btn-group w-100" role="group">
+              <input type="radio" class="btn-check" name="scoringMode" id="scoreDefault" value="default" checked>
+              <label class="btn btn-outline-primary" for="scoreDefault">🏆 คะแนนเต็ม</label>
+              
+              <input type="radio" class="btn-check" name="scoringMode" id="scoreCustom" value="custom">
+              <label class="btn btn-outline-primary" for="scoreCustom">✏️ กรอกคะแนน</label>
+            </div>
+          </div>
+
+          <div class="text-center mb-3">
+            <button type="button" id="startCamBtn" onclick="startLightningScanner()" class="btn btn-success btn-lg w-100 py-3 mb-2 fw-bold"><i class="fa-solid fa-camera"></i> เปิดกล้อง</button>
+            <button type="button" id="stopCamBtn" onclick="stopLightningScanner()" class="btn btn-danger w-100 mb-2 hidden">ปิดกล้อง</button>
+          </div>
+          
+          <div id="canvas-container" class="hidden">
+            <video id="hiddenVideo" autoplay muted playsinline></video>
+            <canvas id="previewCanvas"></canvas>
+            <div class="scan-overlay">
+              <div class="scan-target-box"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6">
+        <div class="card p-4">
+          <h5 class="card-title mb-3 text-primary fw-bold" id="dashboardMainTitle">การส่งงาน [ชื่องาน]</h5>
+          
+          <div class="mb-3">
+            <label class="form-label fw-bold text-secondary">เลือกห้องเรียน:</label>
+            <select id="roomFilterSelect" class="form-select" onchange="renderFilteredDashboard()">
+              <option value="all">-- แสดงทุกห้อง --</option>
+            </select>
+          </div>
+
+          <div class="row text-center mb-3">
+            <div class="col-6">
+              <div class="bg-success bg-opacity-10 p-3 rounded border border-success">
+                <h6>ส่งแล้ว (คน)</h6>
+                <h3 id="dashSubmitted" class="text-success fw-bold">0</h3>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="bg-danger bg-opacity-10 p-3 rounded border border-danger">
+                <h6>ยังไม่ส่ง (คน)</h6>
+                <h3 id="dashMissing" class="text-danger fw-bold">0</h3>
+              </div>
+            </div>
+          </div>
+          <h6 class="fw-bold">รายชื่อนักเรียนที่ยังไม่ส่ง:</h6>
+          <ul id="missingList" class="list-group" style="max-height: 250px; overflow-y: auto;">
+            <li class="list-group-item text-muted text-center">กรุณาเลือกงานเพื่อดูรายชื่อ</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div id="studentSection" class="row justify-content-center hidden">
+      <div class="col-md-9">
+        <div class="row mb-4 text-center">
+          <div class="col-md-4 mb-3">
+            <div class="card p-3 bg-success text-white h-100">
+              <h6>✔ จำนวนงานที่ส่งแล้ว</h6>
+              <h2 id="stuSubmittedCount" class="fw-bold mt-2">0</h2>
+            </div>
+          </div>
+          <div class="col-md-4 mb-3">
+            <div class="card p-3 bg-warning text-dark h-100">
+              <h6>⚠️ จำนวนงานที่ยังไม่ส่ง</h6>
+              <h2 id="stuMissingCount" class="fw-bold mt-2 text-danger">0</h2>
+            </div>
+          </div>
+          <div class="col-md-4 mb-3">
+            <div class="card p-3 bg-info text-dark h-100" style="background-color: #e0f7fa !important; border: 2px solid #00acc1;">
+              <h6 class="fw-bold text-dark">🪙 Coins</h6>
+              <h2 id="stuCoinCount" class="fw-bold mt-2 text-primary">0</h2>
+            </div>
+          </div>
+        </div>
+
+        <div class="card p-4">
+          <h5 class="card-title mb-3 text-primary fw-bold">📝 งานทั้งหมด</h5>
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead class="table-light">
+                <tr>
+                  <th>ชื่องาน</th>
+                  <th class="text-center" style="width: 150px;">สถานะการส่ง</th>
+                </tr>
+              </thead>
+              <tbody id="studentJobsTableBody">
+                <tr>
+                  <td colspan="2" class="text-center text-muted">กำลังโหลดข้อมูล...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="customScoreModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 380px;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title text-primary fw-bold">✏️ สแกนผ่านแล้ว! กรอกคะแนน</h5>
+          <button type="button" class="btn-close" onclick="cancelCustomScore()" aria-label="Close"></button>
+        </div>
+        <div class="modal-body text-center">
+          <h6 id="scoreModalStudentName" class="mb-3 text-success fw-bold">เลขที่ - : นักเรียน</h6>
+          <input type="text" id="scoreInputDisplay" class="form-control form-control-lg text-center mb-3" readonly style="font-size: 2rem; font-weight: bold; background-color: #fff;">
+          
+          <div class="row g-2 mb-3">
+            <div class="col-4"><button type="button" onclick="pressNum(1)" class="btn btn-outline-secondary w-100 calc-btn">1</button></div>
+            <div class="col-4"><button type="button" onclick="pressNum(2)" class="btn btn-outline-secondary w-100 calc-btn">2</button></div>
+            <div class="col-4"><button type="button" onclick="pressNum(3)" class="btn btn-outline-secondary w-100 calc-btn">3</button></div>
+            <div class="col-4"><button type="button" onclick="pressNum(4)" class="btn btn-outline-secondary w-100 calc-btn">4</button></div>
+            <div class="col-4"><button type="button" onclick="pressNum(5)" class="btn btn-outline-secondary w-100 calc-btn">5</button></div>
+            <div class="col-4"><button type="button" onclick="pressNum(6)" class="btn btn-outline-secondary w-100 calc-btn">6</button></div>
+            <div class="col-4"><button type
