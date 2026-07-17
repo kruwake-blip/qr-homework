@@ -254,6 +254,7 @@
 </head>
 <body>
 
+  <!-- แถบหัวข้อด้านบน -->
   <div id="topNavbar" class="top-navbar hidden">
     <button type="button" class="btn btn-outline-secondary border-0 p-1" onclick="toggleSidebar()">
       <i class="fa-solid fa-bars fa-lg" style="color:#e65100;"></i>
@@ -262,6 +263,7 @@
     <div id="userStatusTxt" class="user-status">กำลังโหลด...</div>
   </div>
 
+  <!-- แถบเมนูด้านซ้าย -->
   <div id="sidebarOverlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
   <div id="sidebarMenu" class="sidebar">
     <div id="teacherMenuItems" class="hidden">
@@ -277,6 +279,7 @@
   </div>
 
   <div class="container py-3">
+    <!-- หน้าแรก (Login Screen) -->
     <div id="loginSection" class="row justify-content-center">
       <div class="col-md-5">
         <div class="card p-4 mt-4" style="border: 2px solid #ffe0b2;">
@@ -302,6 +305,7 @@
       </div>
     </div>
 
+    <!-- ส่วนของคุณครู -->
     <div id="teacherSection" class="row justify-content-center hidden">
       <div class="col-md-6 mb-4">
         <div class="card p-4 mb-4">
@@ -348,6 +352,7 @@
       </div>
     </div>
 
+    <!-- ส่วนของนักเรียน -->
     <div id="studentSection" class="row justify-content-center hidden">
       <div class="col-md-9" id="studentDashTab">
         <div class="row mb-4 text-center">
@@ -386,26 +391,25 @@
     </div>
   </div>
 
+  <!-- POPUP MODAL: สุ่มการ์ดพลังพิกเซลโหลดดิ้ง -->
   <div class="modal fade" id="gachaAnimationModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered justify-content-center">
       <div class="modal-content bg-dark text-white text-center p-4 border-0" style="max-width:360px; border-radius:15px;">
         <div id="gachaAnimBody" class="gacha-anim-box">
-          <div class="sparkle-pop-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
-          <h4 class="fw-bold text-warning mt-2" style="z-index: 10; letter-spacing: 1px;">กำลังสุ่มการ์ดพลัง...</h4>
-          <div class="gacha-shimmer-track">
-            <div class="gacha-shimmer-bead"></div>
-          </div>
+          <!-- โครงสร้างภายในจะถูกสร้างใหม่ด้วย JavaScript เสมอเพื่อรีเซ็ตแอนิเมชั่นไม่ให้ค้างในรอบถัดไป -->
         </div>
       </div>
     </div>
   </div>
 
+  <!-- POPUP MODAL: รายละเอียดการ์ดพลัง -->
   <div class="modal fade" id="pokemonCardDetailModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered justify-content-center" style="max-width: 100%;">
       <div id="pokemonCardInjectArea" class="pokemon-card-wrapper"></div>
     </div>
   </div>
 
+  <!-- POPUP MODAL: เครื่องคิดเลขคะแนนคุณครู -->
   <div class="modal fade" id="customScoreModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered" style="max-width: 380px;">
       <div class="modal-content">
@@ -439,6 +443,7 @@
     </div>
   </div>
 
+  <!-- POPUP MODAL แจ้งเตือนผลลัพธ์การสแกน -->
   <div class="modal fade" id="scanResultFeedbackModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered" style="max-width: 440px;">
       <div id="modalContentFeedback" class="modal-content text-center p-4">
@@ -450,6 +455,7 @@
     </div>
   </div>
 
+  <!-- POPUP MODAL: เมนูสร้างชิ้นงานใหม่ -->
   <div class="modal fade" id="createAssignmentModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog"><div class="modal-content">
         <div class="modal-header"><h5 class="modal-title fw-bold" style="color:#e65100;">➕ เพิ่มชิ้นงานใหม่</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
@@ -475,32 +481,18 @@
     const rarityNames = ["Common", "Rare", "Super Rare", "Super Super Rare", "Secret", "Legendary"];
     const rarityBorderColors = ["#6c757d", "#0d6efd", "#fd7e14", "#dc3545", "#d63384", "#bf953f"];
 
-    // ฟังก์ชันปรับปรุงขั้นเด็ดขาดสำหรับแก้ปัญหารูปไม่แสดงผลบนอุปกรณ์ iOS/Safari/Chrome Mobile
     function formatDriveImageUrl(url) {
       if (!url) return 'https://via.placeholder.com/300x300?text=No+Image';
-      
       let cleanUrl = String(url).trim();
-      
-      // กรณีมีสูตรสเปรดชีตหลงเหลือมา เช่น =IMAGE("url") ให้ถอดเอาเฉพาะตัว URL ข้างใน
       if (cleanUrl.toUpperCase().startsWith("=IMAGE")) {
         const matchUrl = cleanUrl.match(/"([^"]+)"/);
-        if (matchUrl && matchUrl[1]) {
-          cleanUrl = matchUrl[1].trim();
-        }
+        if (matchUrl && matchUrl[1]) { cleanUrl = matchUrl[1].trim(); }
       }
-      
-      // ดึง ID ไฟล์ Google Drive ขนาด 33-44 หลัก
       const match = cleanUrl.match(/(?:file\/d\/|open\?id=|uc\?id=|id=)([a-zA-Z0-9_-]{33,44})/);
       if (match && match[1]) {
-        // ใช้ระบบ Thumbnail API ของกูเกิลโดยตรง ซึ่ง iOS ยอมรับและโหลดภาพผ่านได้ง่ายที่สุดโดยไม่โดนบล็อก CORS
         return `https://drive.google.com/thumbnail?sz=w600&id=${match[1]}`;
       }
-      
-      // บังคับเปลี่ยนโปรโตคอลความปลอดภัยพื้นฐาน
-      if (cleanUrl.toLowerCase().startsWith("http://")) {
-        cleanUrl = "https://" + cleanUrl.slice(7);
-      }
-      
+      if (cleanUrl.toLowerCase().startsWith("http://")) { cleanUrl = "https://" + cleanUrl.slice(7); }
       return cleanUrl;
     }
 
@@ -642,12 +634,23 @@
       });
     }
 
+    // แก้ไขข้อที่ 3: เคลียร์โครงสร้างและรีเซ็ตค่า DOM แอนิเมชั่นเส้นวิ่งทุกครั้งที่สุ่มใหม่ ป้องกันแอนิเมชั่นค้าง
     function triggerGachaDraw() {
       if(globalStudentData && globalStudentData.coins < 1) {
         alert("คุณมี Coin ไม่เพียงพอ! กรุณาส่งงานเพิ่มเพื่อสะสมเหรียญครับ");
         return;
       }
       
+      const animContainer = document.getElementById('gachaAnimBody');
+      // ล้างโครงสร้างเก่าออกทั้งหมดและวาดใหม่ลงไปเพื่อให้ CSS Animation เริ่มนับหนึ่งใหม่เสมอ
+      animContainer.innerHTML = `
+        <div class="sparkle-pop-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+        <h4 class="fw-bold text-warning mt-2" style="z-index: 10; letter-spacing: 1px;">กำลังสุ่มการ์ดพลัง...</h4>
+        <div class="gacha-shimmer-track">
+          <div class="gacha-shimmer-bead"></div>
+        </div>
+      `;
+
       const animModal = new bootstrap.Modal(document.getElementById('gachaAnimationModal'));
       animModal.show();
 
@@ -792,6 +795,7 @@
       sendScoreToBackend(tempScannedStudentId, document.getElementById('assignmentSelect').value, val);
     }
 
+    // แก้ไขข้อที่ 1 และ 2: ล้างค่าเก่าของนักเรียนคนก่อนหน้าก่อนที่จะกดโหลดดิ้ง และส่งคำสั่งสั่นสมาร์ทโฟน
     function sendScoreToBackend(studentId, assignmentId, score) {
       if (animationFrameId) cancelAnimationFrame(animationFrameId);
       const modalContent = document.getElementById('modalContentFeedback');
@@ -799,6 +803,10 @@
       const headerTxt = document.getElementById('popupStatusHeader');
       const detailsTxt = document.getElementById('popupStudentDetails');
       const roomInfoTxt = document.getElementById('popupStudentRoomInfo');
+
+      // ปรับปรุงข้อที่ 1: ล้างข้อความ ชื่อ สกุล ห้องเรียน คนเก่าออกให้เกลี้ยงก่อนจะหมุน Loading
+      detailsTxt.innerText = "";
+      roomInfoTxt.innerText = "";
 
       modalContent.className = "modal-content text-center p-4 modal-content-processing";
       iconDiv.innerHTML = '<div class="spinner-border text-warning" role="status"></div>';
@@ -819,6 +827,12 @@
           headerTxt.innerText = "บันทึกสำเร็จ !";
           detailsTxt.innerText = sName;
           roomInfoTxt.innerText = "ห้อง " + sRoom + " - เลขที่ " + sNumber;
+          
+          // ปรับปรุงข้อที่ 2: สั่งให้สมาร์ทโฟนระบบสั่นเบาๆ ยืนยันบันทึกผ่านสำเร็จ (200 มิลลิวินาที)
+          if (navigator.vibrate) {
+            navigator.vibrate(200);
+          }
+          
           updateDashboard();
         } else {
           modalContent.classList.add('modal-content-danger');
